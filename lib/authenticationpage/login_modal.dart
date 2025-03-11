@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:icons_plus/icons_plus.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginModalScreen extends StatefulWidget {
   final String initialValue;
-  final String fieldType; // email, password, pegawai
+  final String fieldType; // "email", "password", "unit", "pegawai"
 
   const LoginModalScreen({
     super.key,
@@ -19,11 +22,89 @@ class LoginModalScreen extends StatefulWidget {
 class _LoginModalScreenState extends State<LoginModalScreen> {
   late TextEditingController _controller;
   bool _obscure = true; // Untuk password
+  List<String> _searchResults = [];
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  // Fungsi untuk mencari unit atau pegawai berdasarkan input user
+  void _searchData(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+      });
+      return;
+    }
+
+    String baseUrl = dotenv.env['BASE_URL'] ?? 'http://default-url.com';
+    String apiUrl;
+
+    if (widget.fieldType == "email") {
+      apiUrl = "$baseUrl/api/auth/unit/search?q=$query";
+    } else if (widget.fieldType == "pegawai") {
+      apiUrl = "$baseUrl/api/auth/anggota/search?q=$query";
+    } else {
+      return; // Jika bukan unit atau pegawai, tidak perlu API
+    }
+
+    final url = Uri.parse(apiUrl);
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      setState(() {
+        _searchResults = data.map((item) => item.toString()).toList();
+      });
+    }
+  }
+
+  // Fungsi untuk menyorot teks pencarian dalam dropdown
+  TextSpan highlightMatch(String text, String query) {
+    if (query.isEmpty) {
+      return TextSpan(text: text, style: const TextStyle(color: Colors.black));
+    }
+
+    final RegExp regExp = RegExp(query, caseSensitive: false);
+    final Iterable<Match> matches = regExp.allMatches(text);
+
+    if (matches.isEmpty) {
+      return TextSpan(text: text, style: const TextStyle(color: Colors.black));
+    }
+
+    List<TextSpan> spans = [];
+    int lastMatchEnd = 0;
+
+    for (Match match in matches) {
+      if (match.start > lastMatchEnd) {
+        spans.add(TextSpan(
+          text: text.substring(lastMatchEnd, match.start),
+          style: const TextStyle(color: Colors.black),
+        ));
+      }
+
+      spans.add(TextSpan(
+        text: text.substring(match.start, match.end),
+        style: const TextStyle(
+          color: Colors.black,
+          backgroundColor: Color(0xFFFFFF99), // Warna kuning muda
+          fontWeight: FontWeight.bold,
+        ),
+      ));
+
+      lastMatchEnd = match.end;
+    }
+
+    if (lastMatchEnd < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastMatchEnd),
+        style: const TextStyle(color: Colors.black),
+      ));
+    }
+
+    return TextSpan(children: spans);
   }
 
   @override
@@ -38,7 +119,11 @@ class _LoginModalScreenState extends State<LoginModalScreen> {
             Text(
               widget.fieldType == "password"
                   ? "Masukkan Password"
-                  : "Masukkan Data",
+                  : widget.fieldType == "email"
+                      ? "Masukkan Email"
+                      : widget.fieldType == "pegawai"
+                          ? "Masukkan Nama Pegawai"
+                          : "Masukkan Data",
               style: GoogleFonts.inter(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -50,6 +135,8 @@ class _LoginModalScreenState extends State<LoginModalScreen> {
               obscureText: widget.fieldType == "password" ? _obscure : false,
               autofocus: true,
               style: const TextStyle(color: Colors.black),
+              onChanged: (value) =>
+                  _searchData(value), // Panggil API saat mengetik
               decoration: InputDecoration(
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -72,6 +159,36 @@ class _LoginModalScreenState extends State<LoginModalScreen> {
                     : null,
               ),
             ),
+            if (_searchResults.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(color: Colors.grey.shade300, blurRadius: 4),
+                  ],
+                ),
+                child: Column(
+                  children: _searchResults.map((item) {
+                    return ListTile(
+                      title: RichText(
+                        text: highlightMatch(
+                            item, _controller.text), // Highlight teks pencarian
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _controller.text = item;
+                          _searchResults =
+                              []; // Hilangkan dropdown setelah memilih
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,

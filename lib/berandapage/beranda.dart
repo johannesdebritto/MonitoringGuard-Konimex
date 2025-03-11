@@ -21,7 +21,8 @@ class _BerandaScreenState extends State<BerandaScreen> {
             flex: 3, // Bisa disesuaikan
             child: Container(
               color: const Color(0xFFD00000),
-              child: const HeaderBeranda(),
+              child:
+                  const HeaderBeranda(), // Hapus parameter karena sekarang pakai StatefulWidget
             ),
           ),
 

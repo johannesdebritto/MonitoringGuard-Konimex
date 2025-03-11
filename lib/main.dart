@@ -1,13 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:monitoring_guard_frontend/berandapage/beranda.dart';
 import 'package:monitoring_guard_frontend/riwayatpage/riwayat.dart';
 import 'package:monitoring_guard_frontend/scannernfc/scannernfc.dart';
 import 'package:monitoring_guard_frontend/widgets/BottomNavbar.dart';
 import 'package:monitoring_guard_frontend/widgets/splash_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  GoogleFonts.config.allowRuntimeFetching = false; // Matikan fetching online
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    // Pastikan path ini sesuai dengan lokasi file .env kamu
+    await dotenv.load();
+
+    print("✅ .env berhasil dimuat: ${dotenv.env}");
+  } catch (e) {
+    print("❌ ERROR: Gagal memuat .env - $e");
+  }
+
+  print("📌 BASE_URL yang dimuat: ${dotenv.env['BASE_URL']}");
+
+  final prefs = await SharedPreferences.getInstance();
+  bool? isFontDownloaded = prefs.getBool('isFontDownloaded');
+
+  GoogleFonts.config.allowRuntimeFetching =
+      isFontDownloaded == true ? false : true;
+
+  if (isFontDownloaded == null) {
+    await prefs.setBool('isFontDownloaded', true);
+  }
+
   runApp(const MainApp());
 }
 
@@ -31,11 +55,11 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _selectedIndex = 0; // Indeks halaman aktif
+  int _selectedIndex = 0;
 
   final List<Widget> _pages = [
     const BerandaScreen(),
-    const NFCScannerScreen(), // Ganti Placeholder dengan NFCScannerScreen
+    const NFCScannerScreen(),
     const RiwayatScreen(),
   ];
 
@@ -50,10 +74,8 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned.fill(
-              child: _pages[_selectedIndex]), // Menampilkan konten utama
-          if (_selectedIndex !=
-              1) // Navbar tidak muncul jika di NFCScannerScreen
+          Positioned.fill(child: _pages[_selectedIndex]),
+          if (_selectedIndex != 1)
             Positioned(
               bottom: 0,
               left: 0,

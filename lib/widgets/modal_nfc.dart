@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NFCModalScreen extends StatefulWidget {
-  final String status; // "aman" atau "masalah"
+  final String status;
+  final String idTugas;
+  final VoidCallback onConfirm;
 
-  const NFCModalScreen({super.key, required this.status});
+  const NFCModalScreen({
+    super.key,
+    required this.status,
+    required this.idTugas,
+    required this.onConfirm,
+  });
 
   @override
   State<NFCModalScreen> createState() => _NFCModalScreenState();
@@ -13,10 +24,80 @@ class NFCModalScreen extends StatefulWidget {
 
 class _NFCModalScreenState extends State<NFCModalScreen> {
   final TextEditingController _keteranganController = TextEditingController();
+  bool isLoading = false;
+  String namaAnggota = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNamaAnggota();
+  }
+
+  Future<void> _loadNamaAnggota() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      namaAnggota = prefs.getString('nama_anggota') ?? '';
+    });
+  }
+
+  Future<void> updateStatus() async {
+    if (namaAnggota.isEmpty) {
+      showError("Nama anggota tidak ditemukan! Harap login ulang.");
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    final isMasalah = widget.status == "masalah";
+    final baseUrl = dotenv.env['BASE_URL'];
+    final url = '$baseUrl/api/tugas/update-status/${widget.idTugas}';
+    final rekapUrl = isMasalah
+        ? '$baseUrl/api/tugas/rekap-tidak-aman/${widget.idTugas}'
+        : '$baseUrl/api/tugas/rekap-selesai/${widget.idTugas}';
+
+    final body = jsonEncode({
+      "id_status": isMasalah ? 3 : 2,
+      "waktu": DateTime.now().toIso8601String(),
+      "nama_anggota": namaAnggota,
+      if (isMasalah) "keterangan": _keteranganController.text,
+    });
+
+    try {
+      await http.put(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"id_status": isMasalah ? 3 : 2}),
+      );
+
+      final response = await http.put(
+        Uri.parse(rekapUrl),
+        headers: {"Content-Type": "application/json"},
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        widget.onConfirm();
+        if (mounted) Navigator.of(context).pop();
+      } else {
+        showError("Gagal memperbarui status: \${response.body}");
+      }
+    } catch (e) {
+      showError("Terjadi kesalahan: \$e");
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  void showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    bool isMasalah = widget.status == "masalah";
+    final isMasalah = widget.status == "masalah";
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -25,50 +106,34 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Gambar sesuai status
             SvgPicture.asset(
               isMasalah
-                  ? 'assets/widgetsassets/danger.svg' // Gambar untuk "masalah"
-                  : 'assets/widgetsassets/centang.svg', // Gambar untuk "aman"
+                  ? 'assets/widgetsassets/danger.svg'
+                  : 'assets/widgetsassets/centang.svg',
               width: 80,
               height: 80,
             ),
             const SizedBox(height: 16),
-
-            // Judul Modal
             Text(
               isMasalah ? "Lokasi Terdapat Masalah" : "Lokasi Aman",
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style:
+                  GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-
-            // Deskripsi Modal
             Text(
               isMasalah
-                  ? "Segera Tuliskan Keterangan Masalah Agar Bisa Ditindak Lanjuti!"
+                  ? "Segera Tuliskan Keterangan Masalah!"
                   : "Terima Kasih Sudah Bertugas!",
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: GoogleFonts.inter(fontSize: 14, color: Colors.grey),
             ),
-
-            // Jika statusnya "masalah", tampilkan input keterangan
             if (isMasalah) ...[
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  "Keterangan Masalah",
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: Text("Keterangan Masalah",
+                    style: GoogleFonts.inter(
+                        fontSize: 14, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -78,36 +143,28 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
                   hintText: "Tulis keterangan masalah...",
                   hintStyle: GoogleFonts.inter(color: Colors.grey),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                      borderRadius: BorderRadius.circular(8)),
                 ),
               ),
             ],
-
             const SizedBox(height: 20),
-
-            // Tombol Konfirmasi
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Menutup modal
-                },
+                onPressed: isLoading ? null : updateStatus,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7F56D9), // Warna tombol
+                  backgroundColor: const Color(0xFF7F56D9),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                      borderRadius: BorderRadius.circular(8)),
                 ),
-                child: Text(
-                  "Konfirmasi",
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text("Konfirmasi",
+                        style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
               ),
             ),
           ],

@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class DetailRiwayatScreen extends StatelessWidget {
-  const DetailRiwayatScreen({super.key});
+class DetailRiwayatScreen extends StatefulWidget {
+  final int idRiwayat;
+  final List<dynamic> riwayatItem;
 
+  const DetailRiwayatScreen({
+    super.key,
+    required this.idRiwayat,
+    required this.riwayatItem,
+  });
+
+  @override
+  State<DetailRiwayatScreen> createState() => _DetailRiwayatScreenState();
+}
+
+class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -15,59 +28,70 @@ class DetailRiwayatScreen extends StatelessWidget {
             bottomRight: Radius.circular(15),
           ),
           child: AppBar(
-            automaticallyImplyLeading: false, // Menghapus tombol kembali
-            title: const Text(
-              'Detail Aktivitas Anda !',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            automaticallyImplyLeading: false,
+            title: Text(
+              'Detail Aktivitas Anda',
+              style: GoogleFonts.inter(
+                  color: Colors.white, fontWeight: FontWeight.bold),
             ),
-            backgroundColor:
-                const Color(0xFFD00000), // Warna merah yang diminta
+            backgroundColor: const Color(0xFFD00000),
             centerTitle: true,
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildActivityCard(
-                'Mulai Pengecekan', '09.00 WIB', '24 Februari 2025', '-'),
-            _buildActivityCard(
-                'Pengecekan Gedung A', '09.30 WIB', '24 Februari 2025', '-'),
-            _buildActivityCard(
-                'Pengecekan Gedung B', '10.00 WIB', '24 Februari 2025', '-'),
-            _buildActivityCard(
-                'Pengecekan Gedung C', '10.30 WIB', '24 Februari 2025', '-'),
-            _buildActivityCard('Pengecekan Gedung D', '12.30 WIB',
-                '24 Februari 2025', 'Lampu Mati'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF7F56D9),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: widget.riwayatItem.map((item) {
+                  return _buildActivityCard(
+                    item['nama_tugas'] ?? 'Tidak ada nama tugas',
+                    item['tanggal_selesai'] ?? '', // Pastikan ini benar
+                    item['jam_selesai'] ?? '', // Jam selesai sesuai data
+                    item['keterangan_masalah'] ?? '--',
+                    item['nama_status'] ?? 'Tidak diketahui',
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD00000),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  'Kembali',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Kembali',
-                  style: TextStyle(color: Colors.white, fontSize: 16)),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildActivityCard(
-      String title, String time, String date, String note) {
+  Widget _buildActivityCard(String namaTugas, String tanggalSelesai,
+      String jamSelesai, String keterangan, String status) {
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: Color(0xFF333333), width: 1.5),
       ),
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
@@ -75,33 +99,35 @@ class DetailRiwayatScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(namaTugas,
+                style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 5),
-            Text('* Waktu Selesai  : $time',
-                style: const TextStyle(fontSize: 14)),
-            Text('* Tanggal Selesai : $date',
-                style: const TextStyle(fontSize: 14)),
-            Text('* Keterangan      : $note',
-                style: const TextStyle(fontSize: 14)),
+            Text('* Tanggal : ${formatTanggal(tanggalSelesai)}',
+                style: GoogleFonts.inter(fontSize: 14)),
+            Text('* Jam Selesai : ${cekNull(jamSelesai)}',
+                style: GoogleFonts.inter(fontSize: 14)),
+            Text('* Keterangan : ${cekNull(keterangan)}',
+                style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 5),
             Row(
               children: [
-                const Text('Status:',
-                    style:
-                        TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                statusIcon(status),
+                const SizedBox(width: 5),
+                Text('Status:',
+                    style: GoogleFonts.inter(
+                        fontSize: 14, fontWeight: FontWeight.bold)),
                 const SizedBox(width: 5),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green[100],
+                    color: getStatusColor(status),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text('Selesai',
-                      style: TextStyle(
-                          color: Colors.green, fontWeight: FontWeight.bold)),
+                  child: Text(status,
+                      style: GoogleFonts.inter(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -109,5 +135,59 @@ class DetailRiwayatScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String formatTanggal(String isoDate) {
+    if (isoDate.isEmpty) return "--";
+    try {
+      DateTime dateTime = DateTime.parse(isoDate).toLocal();
+      return "${dateTime.day} ${_bulan(dateTime.month)} ${dateTime.year}";
+    } catch (e) {
+      return "--";
+    }
+  }
+
+  String _bulan(int month) {
+    List<String> bulan = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember"
+    ];
+    return bulan[month - 1];
+  }
+
+  String cekNull(String? value) {
+    return value == null || value.isEmpty ? "--" : value;
+  }
+
+  Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case "selesai":
+        return Colors.green;
+      case "gagal":
+        return Colors.red;
+      default:
+        return Colors.orange;
+    }
+  }
+
+  Icon statusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case "selesai":
+        return const Icon(Icons.check_circle, color: Colors.green);
+      case "gagal":
+        return const Icon(Icons.cancel, color: Colors.red);
+      default:
+        return const Icon(Icons.hourglass_empty, color: Colors.orange);
+    }
   }
 }

@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
-class ModalSubmitScreen extends StatelessWidget {
+class ModalSubmitScreen extends StatefulWidget {
   const ModalSubmitScreen({super.key});
 
+  @override
+  State<ModalSubmitScreen> createState() => _ModalSubmitScreenState();
+}
+
+class _ModalSubmitScreenState extends State<ModalSubmitScreen> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -15,21 +21,35 @@ class ModalSubmitScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              "Peringatan",
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  LucideIcons.alertTriangle,
+                  color: Colors.orange,
+                  size: 28,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  "Peringatan",
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 12),
+            const Divider(),
             const SizedBox(height: 12),
             Text(
               "Harap selesaikan semua tugas sebelum melanjutkan.",
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 16,
-                color: Colors.black54,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
               ),
             ),
             const SizedBox(height: 20),
@@ -43,7 +63,7 @@ class ModalSubmitScreen extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
               ),
               onPressed: () {
-                Navigator.of(context).pop(); // Menutup modal
+                Navigator.of(context).pop();
               },
               child: Text(
                 "OK",

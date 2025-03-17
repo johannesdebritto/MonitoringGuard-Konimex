@@ -23,8 +23,7 @@ class _RiwayatHeaderScreenState extends State<RiwayatHeaderScreen> {
   Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      namaAnggota =
-          prefs.getString('nama_anggota') ?? "Anggota Tidak Diketahui";
+      namaAnggota = prefs.getString('anggota1') ?? "Anggota Tidak Diketahui";
       namaUnit = prefs.getString('nama_unit') ?? "Unit Tidak Diketahui";
     });
   }
@@ -38,7 +37,8 @@ class _RiwayatHeaderScreenState extends State<RiwayatHeaderScreen> {
         crossAxisAlignment: CrossAxisAlignment.start, // Biar teks rata kiri
         children: [
           // Baris pertama: "Halaman Beranda" & Logout (dari TopBarScreen)
-          const TopBarScreen(),
+          const TopBarScreen(title: 'Halaman Riwayat'),
+
           const SizedBox(height: 2), // Jarak agar teks di bawahnya terlihat
 
           // Teks tambahan (Hallo & Selamat Bertugas)

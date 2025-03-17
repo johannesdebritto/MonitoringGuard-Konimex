@@ -6,12 +6,12 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 
 class CustomModalWidgets extends StatefulWidget {
-  final String status, namaAnggota, namaTugas, idTugas;
+  final String status, namaAnggota1, namaTugas, idTugas;
 
   const CustomModalWidgets({
     super.key,
     required this.status,
-    required this.namaAnggota,
+    required this.namaAnggota1,
     required this.namaTugas,
     required this.idTugas,
     Map<String, dynamic>? rekapData,
@@ -102,7 +102,7 @@ class _CustomModalWidgetsState extends State<CustomModalWidgets> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
-            _buildTextField('Nama Petugas', widget.namaAnggota),
+            _buildTextField('Nama Petugas', widget.namaAnggota1),
             _buildTextField('Tugas', widget.namaTugas),
             if (widget.status == "Selesai") ...[
               _buildTextField('Tanggal Selesai', tanggalSelesai),

@@ -16,7 +16,7 @@ class TugasScreen extends StatefulWidget {
 
 class _TugasScreenState extends State<TugasScreen> {
   List tugasList = [];
-  String namaAnggota = "";
+  String namaAnggota1 = "";
 
   @override
   void initState() {
@@ -27,8 +27,7 @@ class _TugasScreenState extends State<TugasScreen> {
 
   Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(
-        () => namaAnggota = prefs.getString('nama_anggota') ?? namaAnggota);
+    setState(() => namaAnggota1 = prefs.getString('anggota1') ?? namaAnggota1);
   }
 
   Future<void> fetchTugas() async {
@@ -145,7 +144,7 @@ class _TugasScreenState extends State<TugasScreen> {
                               builder: (context) => CustomModalWidgets(
                                 status: status,
                                 namaTugas: title,
-                                namaAnggota: namaAnggota,
+                                namaAnggota1: namaAnggota1,
                                 rekapData: rekapData,
                                 idTugas: idTugas,
                               ),

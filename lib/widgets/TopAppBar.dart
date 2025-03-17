@@ -5,7 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:monitoring_guard_frontend/authenticationpage/login.dart';
 
 class TopBarScreen extends StatefulWidget {
-  const TopBarScreen({super.key});
+  final String title;
+  const TopBarScreen({super.key, required this.title});
 
   @override
   State<TopBarScreen> createState() => _TopBarScreenState();
@@ -26,12 +27,12 @@ class _TopBarScreenState extends State<TopBarScreen> {
   Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFFD00000),
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Halaman Beranda',
+            widget.title,
             style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.bold,

@@ -5,11 +5,13 @@ import 'package:google_fonts/google_fonts.dart';
 class BottomNavbarWidgets extends StatefulWidget {
   final int selectedIndex;
   final Function(int) onItemTapped;
+  final int jumlahTombol; // Menyesuaikan jumlah tombol (2 atau 3)
 
   const BottomNavbarWidgets({
     super.key,
     required this.selectedIndex,
     required this.onItemTapped,
+    required this.jumlahTombol, // Ditambahkan untuk fleksibilitas
   });
 
   @override
@@ -20,7 +22,7 @@ class _BottomNavbarWidgetsState extends State<BottomNavbarWidgets> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 90, // Menyesuaikan tinggi agar tombol scan tidak terpotong
+      height: 90,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.bottomCenter,
@@ -30,29 +32,32 @@ class _BottomNavbarWidgetsState extends State<BottomNavbarWidgets> {
             margin: const EdgeInsets.symmetric(horizontal: 35, vertical: 5),
             padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 5),
             decoration: BoxDecoration(
-              color: Colors.transparent, // Hindari warna putih di belakang
+              color: Colors.transparent,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(60),
               child: Container(
-                color: const Color(0xFFD00000), // Warna merah navbar
+                color: const Color(0xFFD00000),
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildNavItem(Iconsax.home_outline, 'Beranda', 0),
-                    const SizedBox(width: 70), // Spacer untuk scan button
-                    _buildNavItem(Iconsax.clock_outline, 'Riwayat', 2),
+                    if (widget.jumlahTombol == 3)
+                      const SizedBox(width: 70), // Spacer jika ada tombol scan
+                    _buildNavItem(Iconsax.clock_outline, 'Riwayat',
+                        widget.jumlahTombol == 3 ? 2 : 1),
                   ],
                 ),
               ),
             ),
           ),
-          // Tombol Scan
-          Positioned(
-            bottom: 28, // Mengangkat tombol scan lebih tinggi
-            child: _buildScanButton(),
-          ),
+          // Tombol Scan (hanya muncul jika jumlah tombol == 3)
+          if (widget.jumlahTombol == 3)
+            Positioned(
+              bottom: 28,
+              child: _buildScanButton(),
+            ),
         ],
       ),
     );
@@ -95,7 +100,7 @@ class _BottomNavbarWidgetsState extends State<BottomNavbarWidgets> {
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.black, width: 3), // Garis tepi hitam
+        border: Border.all(color: Colors.black, width: 3),
       ),
       padding: const EdgeInsets.all(8),
       child: IconButton(

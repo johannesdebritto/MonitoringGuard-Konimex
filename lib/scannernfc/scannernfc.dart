@@ -113,13 +113,15 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Tombol kembali ke MainNavigation
+// Tombol kembali ke MainNavigation
             ElevatedButton(
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const MainNavigation(),
+                    builder: (context) => MainNavigation(
+                      tipePatroli: 'luar', // Ganti dengan tipe yang sesuai
+                    ),
                   ),
                 );
               },
@@ -131,6 +133,7 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
               ),
               child: Text('Kembali', style: GoogleFonts.inter(fontSize: 16)),
             ),
+
             const SizedBox(height: 16),
           ],
         ),

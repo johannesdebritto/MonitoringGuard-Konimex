@@ -7,23 +7,26 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:monitoring_guard_frontend/berandapage/tugas.dart';
 import 'package:monitoring_guard_frontend/berandapage/tugas_selesai.dart';
+import 'package:monitoring_guard_frontend/berandapage/tugas_dalam.dart'; // Import tugas dalam
 import 'package:monitoring_guard_frontend/widgets/modal_submit.dart';
 
 class KontenBeranda extends StatefulWidget {
-  const KontenBeranda({super.key});
+  final String tipePatroli; // 🔥 Tambahkan tipePatroli
+
+  const KontenBeranda({super.key, required this.tipePatroli});
 
   @override
   _KontenBerandaState createState() => _KontenBerandaState();
 }
 
 class _KontenBerandaState extends State<KontenBeranda> {
-  bool _isSubmitted = false; // 🔥 Tambahkan state untuk mengganti tampilan
+  bool _isSubmitted = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchStatus(); // 🔥 Ambil status dari server
-    _loadStatus(); // 🔥 Ambil status yang tersimpan
+    _fetchStatus();
+    _loadStatus();
   }
 
   Future<void> _loadStatus() async {
@@ -161,7 +164,7 @@ class _KontenBerandaState extends State<KontenBeranda> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 30, vertical: 8),
                         decoration: BoxDecoration(
-                          color: Colors.green, // 🔥 Warna hijau
+                          color: Colors.green,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -175,8 +178,7 @@ class _KontenBerandaState extends State<KontenBeranda> {
                       )
                     : ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color(0xFF7F56D9), // Warna ungu
+                          backgroundColor: const Color(0xFF7F56D9),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 30, vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -198,8 +200,10 @@ class _KontenBerandaState extends State<KontenBeranda> {
             const SizedBox(height: 5),
             Expanded(
               child: _isSubmitted
-                  ? const TugasSelesaiScreen() // 🔥 Jika sudah submit, ganti tampilan
-                  : const TugasScreen(), // 🔥 Jika belum submit, tetap tampilkan tugas
+                  ? const TugasSelesaiScreen() // 🔥 Tampilannya sama, selesai
+                  : (widget.tipePatroli == "luar"
+                      ? const TugasScreen() // 🔥 Jika patroli luar
+                      : const TugasDalamScreen()), // 🔥 Jika patroli dalam
             ),
           ],
         ),

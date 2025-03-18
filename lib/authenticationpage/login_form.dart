@@ -71,7 +71,7 @@ class _LoginFormState extends State<LoginForm> {
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             child: SizedBox(
-              height: _currentPage == 0 ? 180 : 280, // Sesuaikan tinggi halaman
+              height: _currentPage == 0 ? 210 : 280, // Sesuaikan tinggi halaman
               child: PageView(
                 controller: _pageController,
                 physics:

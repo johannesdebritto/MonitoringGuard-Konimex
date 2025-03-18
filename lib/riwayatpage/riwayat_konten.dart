@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:monitoring_guard_frontend/riwayatpage/daftar_riwayat.dart';
+import 'package:monitoring_guard_frontend/riwayatpage/daftar_riwayat_luar.dart';
+import 'package:monitoring_guard_frontend/riwayatpage/daftar_riwayat_dalam.dart';
 
 class RiwayatKontenScreen extends StatefulWidget {
-  const RiwayatKontenScreen({super.key});
+  final String tipePatroli; // 🔥 Tambahkan tipePatroli sebagai parameter
+
+  const RiwayatKontenScreen({super.key, required this.tipePatroli});
 
   @override
   State<RiwayatKontenScreen> createState() => _RiwayatKontenScreenState();
@@ -64,7 +67,13 @@ class _RiwayatKontenScreenState extends State<RiwayatKontenScreen> {
               ],
             ),
             const SizedBox(height: 5),
-            Expanded(child: DaftarRiwayatScreen()),
+
+            // 🔥 Ganti tampilan daftar riwayat sesuai tipe patroli
+            Expanded(
+              child: widget.tipePatroli == "luar"
+                  ? const DaftarRiwayatScreen() // Jika patroli luar
+                  : const DaftarRiwayatDalamScreen(), // Jika patroli dalam
+            ),
           ],
         ),
       ),

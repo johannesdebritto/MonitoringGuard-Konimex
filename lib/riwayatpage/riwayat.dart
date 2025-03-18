@@ -3,7 +3,9 @@ import 'package:monitoring_guard_frontend/riwayatpage/riwayat_header.dart';
 import 'package:monitoring_guard_frontend/riwayatpage/riwayat_konten.dart';
 
 class RiwayatScreen extends StatefulWidget {
-  const RiwayatScreen({super.key});
+  final String tipePatroli; // 🔥 Tambahkan tipe patroli
+
+  const RiwayatScreen({super.key, required this.tipePatroli});
 
   @override
   State<RiwayatScreen> createState() => _RiwayatScreenState();
@@ -28,7 +30,9 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
           // Bagian putih (Tetap seperti sebelumnya)
           Expanded(
             flex: 8, // Bisa ubah 7 ke 7.5 kalau mau lebih turun
-            child: const RiwayatKontenScreen(),
+            child: RiwayatKontenScreen(
+                tipePatroli:
+                    widget.tipePatroli), // 🔥 Kirim tipe patroli ke konten
           ),
         ],
       ),

@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:monitoring_guard_frontend/riwayatpage/konten_riwayat.dart';
+import 'package:monitoring_guard_frontend/riwayatpage/konten_riwayat_luar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DaftarRiwayatScreen extends StatefulWidget {

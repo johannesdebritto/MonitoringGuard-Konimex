@@ -63,26 +63,40 @@ class _LoginModalAnggotaState extends State<LoginModalAnggota> {
       itemBuilder: (context, index) {
         String name = _suggestions[index];
         String query = _controller.text.toLowerCase();
-        List<TextSpan> textSpans = [];
-
         int startIndex = name.toLowerCase().indexOf(query);
-        if (startIndex != -1) {
-          textSpans.add(
-            TextSpan(
-              text: name.substring(startIndex, startIndex + query.length),
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, backgroundColor: Colors.yellow),
-            ),
+
+        if (startIndex == -1) {
+          // Kalau tidak ditemukan, langsung tampilkan nama biasa tanpa highlight
+          return ListTile(
+            title: Text(name, style: const TextStyle(color: Colors.black)),
+            onTap: () {
+              setState(() {
+                _controller.text = name;
+                _suggestions.clear();
+              });
+            },
           );
         }
 
+        // Kalau ditemukan, buat teks dengan highlight
         return ListTile(
           title: RichText(
             text: TextSpan(
-              text: name.substring(0, startIndex),
               style: const TextStyle(color: Colors.black),
-              children: textSpans +
-                  [TextSpan(text: name.substring(startIndex + query.length))],
+              children: [
+                TextSpan(
+                    text: name.substring(0, startIndex)), // Sebelum highlight
+                TextSpan(
+                  text: name.substring(startIndex, startIndex + query.length),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    backgroundColor: Colors.yellow,
+                  ),
+                ),
+                TextSpan(
+                    text: name.substring(
+                        startIndex + query.length)), // Setelah highlight
+              ],
             ),
           ),
           onTap: () {

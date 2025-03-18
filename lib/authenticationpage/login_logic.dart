@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:monitoring_guard_frontend/main.dart';
+
+import 'package:monitoring_guard_frontend/tugas_selection/home_selection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -93,7 +94,8 @@ class LoginLogic {
         if (context.mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const MainNavigation()),
+            MaterialPageRoute(
+                builder: (context) => const HomeSelectionScreen()),
           );
         }
 

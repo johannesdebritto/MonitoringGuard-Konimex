@@ -43,14 +43,10 @@ class _LoginModalUnitPatroliState extends State<LoginModalUnitPatroli> {
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
-
-      // Cek isi JSON sebelum diproses
       print("Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final dynamic jsonData = json.decode(response.body);
-
-        // Pastikan jsonData berbentuk List
         if (jsonData is List) {
           setState(() {
             _dropdownItems = jsonData
@@ -71,6 +67,7 @@ class _LoginModalUnitPatroliState extends State<LoginModalUnitPatroli> {
   }
 
   void _showDropdown() {
+    if (_isLoading) return; // Jangan tampilkan jika masih loading
     if (_overlayEntry != null) return;
     _overlayEntry = _createOverlayEntry();
     Overlay.of(context).insert(_overlayEntry!);
@@ -87,7 +84,7 @@ class _LoginModalUnitPatroliState extends State<LoginModalUnitPatroli> {
     return OverlayEntry(
       builder: (context) {
         return Positioned(
-          width: MediaQuery.of(context).size.width * 0.90,
+          width: MediaQuery.of(context).size.width * 0.70,
           child: CompositedTransformFollower(
             link: _layerLink,
             offset: const Offset(0, 60),
@@ -100,21 +97,34 @@ class _LoginModalUnitPatroliState extends State<LoginModalUnitPatroli> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.black, width: 2),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _dropdownItems.map((item) {
-                    return ListTile(
-                      title: Text(item,
-                          style: const TextStyle(color: Colors.black)),
-                      onTap: () {
-                        setState(() {
-                          _controller.text = item;
-                          _hideDropdown();
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
+                child: _isLoading
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    : SizedBox(
+                        height: 200,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: _dropdownItems.map((item) {
+                              return ListTile(
+                                title: Text(item,
+                                    style:
+                                        const TextStyle(color: Colors.black)),
+                                onTap: () {
+                                  setState(() {
+                                    _controller.text = item;
+                                    _hideDropdown();
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
               ),
             ),
           ),
@@ -156,42 +166,35 @@ class _LoginModalUnitPatroliState extends State<LoginModalUnitPatroli> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.black, width: 2),
                   ),
-                  child: IntrinsicHeight(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _controller.text.isEmpty
-                                ? "Pilih ${widget.fieldType == "unit_anggota" ? "Unit Anggota" : "Patroli Anggota"}"
-                                : _controller.text,
-                            style: GoogleFonts.robotoSlab(
-                              fontSize: 16,
-                              color: _controller.text.isEmpty
-                                  ? Colors.grey
-                                  : Colors.black,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _controller.text.isEmpty
+                              ? "Pilih ${widget.fieldType == "unit_anggota" ? "Unit Anggota" : "Patroli Anggota"}"
+                              : _controller.text,
+                          style: GoogleFonts.robotoSlab(
+                            fontSize: 16,
+                            color: _controller.text.isEmpty
+                                ? Colors.grey
+                                : Colors.black,
+                          ),
+                        ),
+                      ),
+                      _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              _isDropdownVisible
+                                  ? LucideIcons.arrowUpCircle
+                                  : LucideIcons.arrowDownCircle,
+                              color: Colors.black,
                             ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 50,
-                          child: Center(
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2))
-                                : Icon(
-                                    _isDropdownVisible
-                                        ? LucideIcons.arrowUpCircle
-                                        : LucideIcons.arrowDownCircle,
-                                    color: Colors.black,
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ),

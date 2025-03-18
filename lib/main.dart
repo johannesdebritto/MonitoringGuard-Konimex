@@ -12,9 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Pastikan path ini sesuai dengan lokasi file .env kamu
     await dotenv.load();
-
     print("✅ .env berhasil dimuat: ${dotenv.env}");
   } catch (e) {
     print("❌ ERROR: Gagal memuat .env - $e");
@@ -48,7 +46,9 @@ class MainApp extends StatelessWidget {
 }
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final String tipePatroli;
+
+  const MainNavigation({super.key, required this.tipePatroli});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -56,12 +56,21 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
+  late List<Widget>
+      _pages; // Menggunakan 'late' agar bisa diinisialisasi di initState()
 
-  final List<Widget> _pages = [
-    const BerandaScreen(),
-    const NFCScannerScreen(),
-    const RiwayatScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+
+    // Buat daftar halaman berdasarkan tipePatroli
+    _pages = [
+      BerandaScreen(tipePatroli: widget.tipePatroli), // Beranda tetap ada
+      if (widget.tipePatroli == "luar")
+        NFCScannerScreen(), // Scanner hanya untuk "luar"
+      RiwayatScreen(tipePatroli: widget.tipePatroli), // Riwayat tetap ada
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -72,20 +81,11 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(child: _pages[_selectedIndex]),
-          if (_selectedIndex != 1)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: BottomNavbarWidgets(
-                selectedIndex: _selectedIndex,
-                onItemTapped: _onItemTapped,
-              ),
-            ),
-        ],
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavbarWidgets(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
+        jumlahTombol: _pages.length, // Jumlah tombol di navbar menyesuaikan
       ),
     );
   }

@@ -78,7 +78,7 @@ class _LoginModalScreenState extends State<LoginModalScreen> {
     return OverlayEntry(
       builder: (context) {
         return Positioned(
-          width: MediaQuery.of(context).size.width * 0.90,
+          width: MediaQuery.of(context).size.width * 0.70,
           child: CompositedTransformFollower(
             link: _layerLink,
             offset: const Offset(0, 60),
@@ -95,8 +95,13 @@ class _LoginModalScreenState extends State<LoginModalScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: _dropdownItems.map((item) {
                     return ListTile(
-                      title: Text(item,
-                          style: const TextStyle(color: Colors.black)),
+                      title: Text(
+                        item,
+                        style: GoogleFonts.inter(
+                          fontSize: 14, // Ukuran lebih kecil
+                          color: Colors.black,
+                        ),
+                      ),
                       onTap: () {
                         setState(() {
                           _controller.text = item;
@@ -166,53 +171,56 @@ class _LoginModalScreenState extends State<LoginModalScreen> {
                         : _showDropdown(context);
                   },
                   child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 15, horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.black, width: 2),
-                      ),
-                      child: IntrinsicHeight(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _controller.text.isEmpty
-                                    ? "Pilih Email"
-                                    : _controller.text,
-                                style: GoogleFonts.robotoSlab(
-                                  fontSize: 16,
-                                  color: _controller.text.isEmpty
-                                      ? Colors.grey
-                                      : Colors.black,
-                                ),
-                              ),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 10), // Sedikit diperkecil
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.black, width: 2),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          // Supaya teks tidak memaksa turun
+                          child: Text(
+                            _controller.text.isEmpty
+                                ? "Pilih Email"
+                                : _controller.text,
+                            style: GoogleFonts.inter(
+                              fontSize: 14, // Lebih kecil biar gak kepanjangan
+                              color: _controller.text.isEmpty
+                                  ? Colors.grey
+                                  : Colors.black,
                             ),
-                            // Garis separator yang nempel atas & bawah textfield
-
-                            // Tombol dropdown dengan ukuran tetap
-                            SizedBox(
-                              width: 50,
-                              child: Center(
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2))
-                                    : Icon(
-                                        _isDropdownVisible
-                                            ? LucideIcons.arrowUpCircle
-                                            : LucideIcons.arrowDownCircle,
-                                        color: Colors.black,
-                                      ),
-                              ),
-                            ),
-                          ],
+                            overflow: TextOverflow
+                                .ellipsis, // Potong teks kalau kepanjangan
+                            maxLines: 1, // Biar tetap satu baris
+                            softWrap: false, // Jangan wrap ke bawah
+                          ),
                         ),
-                      )),
+                        SizedBox(
+                          width: 40, // Lebih kecil biar gak terlalu lebar
+                          child: Center(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : Icon(
+                                    _isDropdownVisible
+                                        ? LucideIcons.arrowUpCircle
+                                        : LucideIcons.arrowDownCircle,
+                                    color: Colors.black,
+                                    size: 20, // Ukuran icon diperkecil
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             const SizedBox(height: 20),

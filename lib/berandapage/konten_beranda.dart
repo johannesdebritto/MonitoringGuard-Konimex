@@ -7,11 +7,12 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:monitoring_guard_frontend/berandapage/tugas.dart';
 import 'package:monitoring_guard_frontend/berandapage/tugas_selesai.dart';
-import 'package:monitoring_guard_frontend/berandapage/tugas_dalam.dart'; // Import tugas dalam
-import 'package:monitoring_guard_frontend/widgets/modal_submit.dart';
+import 'package:monitoring_guard_frontend/berandapage/tugas_dalam.dart';
+import 'package:monitoring_guard_frontend/widgets/modal_submit_luar.dart';
+import 'package:monitoring_guard_frontend/widgets/modal_submit_dalam.dart'; // Import modal submit dalam
 
 class KontenBeranda extends StatefulWidget {
-  final String tipePatroli; // 🔥 Tambahkan tipePatroli
+  final String tipePatroli;
 
   const KontenBeranda({super.key, required this.tipePatroli});
 
@@ -113,6 +114,17 @@ class _KontenBerandaState extends State<KontenBeranda> {
     }
   }
 
+  void _handleSubmit() {
+    if (widget.tipePatroli == "luar") {
+      _submitTugas();
+    } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) => const ModalSubmitDalam(),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Align(
@@ -185,7 +197,7 @@ class _KontenBerandaState extends State<KontenBeranda> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: _submitTugas,
+                        onPressed: _handleSubmit, // 🔥 Pakai fungsi baru
                         child: Text(
                           "Submit",
                           style: GoogleFonts.inter(
@@ -200,10 +212,10 @@ class _KontenBerandaState extends State<KontenBeranda> {
             const SizedBox(height: 5),
             Expanded(
               child: _isSubmitted
-                  ? const TugasSelesaiScreen() // 🔥 Tampilannya sama, selesai
+                  ? const TugasSelesaiScreen()
                   : (widget.tipePatroli == "luar"
-                      ? const TugasScreen() // 🔥 Jika patroli luar
-                      : const TugasDalamScreen()), // 🔥 Jika patroli dalam
+                      ? const TugasScreen()
+                      : const TugasDalamScreen()),
             ),
           ],
         ),

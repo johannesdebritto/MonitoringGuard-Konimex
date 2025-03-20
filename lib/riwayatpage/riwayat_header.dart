@@ -23,7 +23,8 @@ class _RiwayatHeaderScreenState extends State<RiwayatHeaderScreen> {
   Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      namaAnggota = prefs.getString('anggota1') ?? "Anggota Tidak Diketahui";
+      namaAnggota =
+          prefs.getString('anggota_terpilih') ?? "Anggota Tidak Diketahui";
       namaUnit = prefs.getString('nama_unit') ?? "Unit Tidak Diketahui";
     });
   }
@@ -34,27 +35,29 @@ class _RiwayatHeaderScreenState extends State<RiwayatHeaderScreen> {
       color: const Color(0xFFD00000),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, // Biar teks rata kiri
+        crossAxisAlignment: CrossAxisAlignment.start, // Sejajarkan ke kiri
         children: [
-          // Baris pertama: "Halaman Beranda" & Logout (dari TopBarScreen)
-          const TopBarScreen(title: 'Halaman Riwayat'),
-
-          const SizedBox(height: 2), // Jarak agar teks di bawahnya terlihat
+          // Baris pertama: TopBarScreen (title sejajar dengan teks di bawah)
+          Padding(
+            padding: const EdgeInsets.only(
+                bottom: 5), // Jarak sedikit dengan teks berikutnya
+            child: TopBarScreen(title: 'Halaman Riwayat'),
+          ),
 
           // Teks tambahan (Hallo & Selamat Bertugas)
           Text(
-            'Halo, $namaAnggota 👋', // Pakai nama anggota dari SharedPreferences
+            'Halo, $namaAnggota 👋',
             style: GoogleFonts.inter(
-              fontSize: 25, // Diperbesar biar lebih jelas
+              fontSize: 23,
               fontWeight: FontWeight.w700,
               color: Colors.white,
             ),
           ),
           const SizedBox(height: 5),
           Text(
-            'Selamat Bertugas di $namaUnit', // Nama unit dari SharedPreferences
+            'Selamat Bertugas di $namaUnit',
             style: GoogleFonts.inter(
-              fontSize: 22, // Diperbesar biar lebih nyaman dibaca
+              fontSize: 22,
               fontWeight: FontWeight.w500,
               color: Colors.white,
             ),

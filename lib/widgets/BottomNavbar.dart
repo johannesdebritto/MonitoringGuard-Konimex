@@ -2,27 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class BottomNavbarWidgets extends StatefulWidget {
+class BottomNavbarWidgets extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemTapped;
-  final int jumlahTombol; // Menyesuaikan jumlah tombol (2 atau 3)
+  final int jumlahTombol;
 
   const BottomNavbarWidgets({
     super.key,
     required this.selectedIndex,
     required this.onItemTapped,
-    required this.jumlahTombol, // Ditambahkan untuk fleksibilitas
+    required this.jumlahTombol,
   });
 
   @override
-  _BottomNavbarWidgetsState createState() => _BottomNavbarWidgetsState();
-}
-
-class _BottomNavbarWidgetsState extends State<BottomNavbarWidgets> {
-  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 90,
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
+      ),
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.bottomCenter,
@@ -32,7 +29,7 @@ class _BottomNavbarWidgetsState extends State<BottomNavbarWidgets> {
             margin: const EdgeInsets.symmetric(horizontal: 35, vertical: 5),
             padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 5),
             decoration: BoxDecoration(
-              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(60),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(60),
@@ -43,19 +40,18 @@ class _BottomNavbarWidgetsState extends State<BottomNavbarWidgets> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildNavItem(Iconsax.home_outline, 'Beranda', 0),
-                    if (widget.jumlahTombol == 3)
-                      const SizedBox(width: 70), // Spacer jika ada tombol scan
+                    if (jumlahTombol == 3) const SizedBox(width: 70),
                     _buildNavItem(Iconsax.clock_outline, 'Riwayat',
-                        widget.jumlahTombol == 3 ? 2 : 1),
+                        jumlahTombol == 3 ? 2 : 1),
                   ],
                 ),
               ),
             ),
           ),
           // Tombol Scan (hanya muncul jika jumlah tombol == 3)
-          if (widget.jumlahTombol == 3)
+          if (jumlahTombol == 3)
             Positioned(
-              bottom: 28,
+              bottom: 20, // Mengurangi efek menaikkan layout
               child: _buildScanButton(),
             ),
         ],
@@ -65,15 +61,14 @@ class _BottomNavbarWidgetsState extends State<BottomNavbarWidgets> {
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     return GestureDetector(
-      onTap: () => widget.onItemTapped(index),
+      onTap: () => onItemTapped(index),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             icon,
             size: 30,
-            color:
-                widget.selectedIndex == index ? Colors.white : Colors.white70,
+            color: selectedIndex == index ? Colors.white : Colors.white70,
           ),
           const SizedBox(height: 2),
           Text(
@@ -83,7 +78,7 @@ class _BottomNavbarWidgetsState extends State<BottomNavbarWidgets> {
               fontSize: 12,
             ),
           ),
-          if (widget.selectedIndex == index)
+          if (selectedIndex == index)
             Container(
               width: 20,
               height: 2,
@@ -104,7 +99,7 @@ class _BottomNavbarWidgetsState extends State<BottomNavbarWidgets> {
       ),
       padding: const EdgeInsets.all(8),
       child: IconButton(
-        onPressed: () => widget.onItemTapped(1),
+        onPressed: () => onItemTapped(1),
         icon: Icon(
           Iconsax.scan_barcode_outline,
           size: 30,

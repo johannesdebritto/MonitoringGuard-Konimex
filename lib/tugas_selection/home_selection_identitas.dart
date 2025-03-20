@@ -7,7 +7,7 @@ typedef OnLogout = VoidCallback;
 
 class HomeSelectionIdentitas extends StatefulWidget {
   final OnLogout onLogout;
-  final Function(String) onIdRiwayatLoaded; // Tambahkan callback
+  final Function(String, List<String>) onIdRiwayatLoaded; // Ubah tipe parameter
 
   const HomeSelectionIdentitas({
     super.key,
@@ -37,14 +37,19 @@ class _HomeSelectionIdentitasState extends State<HomeSelectionIdentitas> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       namaUnit = prefs.getString('nama_unit') ?? "Unit Tidak Diketahui";
-      anggota1 = prefs.getString('anggota1') ?? "-";
-      anggota2 = prefs.getString('anggota2') ?? "-";
+      anggota1 = prefs.getString('anggota1') ?? "";
+      anggota2 = prefs.getString('anggota2') ?? "";
+      idRiwayat = prefs.getString('id_riwayat') ?? "";
       patroli = prefs.getString('id_patroli') ?? "-";
       unitKerja = prefs.getString('id_unit_kerja') ?? "-";
-      idRiwayat = prefs.getString('id_riwayat') ?? "";
 
-      // Kirim idRiwayat ke HomeSelectionScreen tanpa menampilkannya
-      widget.onIdRiwayatLoaded(idRiwayat);
+      print("Patroli: $patroli, Unit Kerja: $unitKerja"); // Debugging
+
+      List<String> anggotaList = [];
+      if (anggota1.isNotEmpty) anggotaList.add(anggota1);
+      if (anggota2.isNotEmpty) anggotaList.add(anggota2);
+
+      widget.onIdRiwayatLoaded(idRiwayat, anggotaList);
     });
   }
 

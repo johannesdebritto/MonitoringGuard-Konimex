@@ -23,7 +23,9 @@ class _HeaderBerandaState extends State<HeaderBeranda> {
   Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      namaAnggota = prefs.getString('anggota1') ?? "Anggota Tidak Diketahui";
+      namaAnggota = prefs.getString('anggota_terpilih') ??
+          prefs.getString('anggota1') ?? // Ambil dari anggota1 kalau tidak ada
+          "Anggota Tidak Diketahui";
       namaUnit = prefs.getString('nama_unit') ?? "Unit Tidak Diketahui";
     });
   }
@@ -37,14 +39,14 @@ class _HeaderBerandaState extends State<HeaderBeranda> {
         crossAxisAlignment: CrossAxisAlignment.start, // Biar teks rata kiri
         children: [
           // Baris pertama: "Halaman Beranda" & Logout (dari TopBarScreen)
-          const TopBarScreen(
-            title: 'Halaman Beranda',
+          Padding(
+            padding: const EdgeInsets.only(
+                bottom: 5), // Jarak sedikit dengan teks berikutnya
+            child: TopBarScreen(title: 'Halaman Riwayat'),
           ),
-          const SizedBox(height: 2), // Jarak agar teks di bawahnya terlihat
-
           // Teks tambahan (Hallo & Selamat Bertugas)
           Text(
-            'Halo, $namaAnggota 👋', // Pakai nama anggota dari SharedPreferences
+            'Halo, $namaAnggota 👋', // Menampilkan nama anggota yang terpilih
             style: GoogleFonts.inter(
               fontSize: 23, // Diperbesar biar lebih jelas
               fontWeight: FontWeight.w700,

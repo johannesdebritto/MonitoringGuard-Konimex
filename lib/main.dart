@@ -81,11 +81,20 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavbarWidgets(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onItemTapped,
-        jumlahTombol: _pages.length, // Jumlah tombol di navbar menyesuaikan
+      body: Stack(
+        children: [
+          _pages[_selectedIndex], // Konten utama
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: BottomNavbarWidgets(
+              selectedIndex: _selectedIndex,
+              onItemTapped: _onItemTapped,
+              jumlahTombol: _pages.length,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:monitoring_guard_frontend/widgets/logoutmodal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:monitoring_guard_frontend/authenticationpage/login.dart';
@@ -44,8 +45,6 @@ class _HomeSelectionIdentitasState extends State<HomeSelectionIdentitas> {
       patroli = prefs.getString('id_patroli') ?? "-";
       unitKerja = prefs.getString('id_unit_kerja') ?? "-";
 
-      print("Patroli: $patroli, Unit Kerja: $unitKerja"); // Debugging
-
       List<String> anggotaList = [];
       if (anggota1.isNotEmpty) anggotaList.add(anggota1);
       if (anggota2.isNotEmpty) anggotaList.add(anggota2);
@@ -55,13 +54,23 @@ class _HomeSelectionIdentitasState extends State<HomeSelectionIdentitas> {
   }
 
   Future<void> _logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Hapus semua data di SharedPreferences
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return LogoutModal(
+          onLogout: () async {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            await prefs.clear(); // Hapus semua data di SharedPreferences
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false, // Hapus semua halaman sebelumnya
+            // Navigasi ke LoginScreen setelah logout
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false, // Hapus semua halaman sebelumnya
+            );
+          },
+        );
+      },
     );
   }
 
@@ -119,7 +128,7 @@ class _HomeSelectionIdentitasState extends State<HomeSelectionIdentitas> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                onPressed: _logout,
+                onPressed: _logout, // Menampilkan modal konfirmasi logout
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   padding:

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:monitoring_guard_frontend/tugas_selection/home_selection.dart';
+
+import 'package:monitoring_guard_frontend/widgets/kembalimodal.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TopBarScreen extends StatefulWidget {
   final String title;
@@ -12,11 +14,20 @@ class TopBarScreen extends StatefulWidget {
 }
 
 class _TopBarScreenState extends State<TopBarScreen> {
-  void _navigateToHome() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeSelectionScreen()),
-      (route) => false, // Hapus semua halaman sebelumnya
+  void _showExitConfirmation() async {
+    // Ambil idRiwayat sebelum menampilkan modal
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? idRiwayat =
+        prefs.getString('id_riwayat'); // Ambil idRiwayat dari SharedPreferences
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return KembaliModal(
+          idRiwayat:
+              idRiwayat ?? '', // Pastikan idRiwayat ada, jika tidak kosongkan
+        );
+      },
     );
   }
 
@@ -34,7 +45,7 @@ class _TopBarScreenState extends State<TopBarScreen> {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: _navigateToHome,
+          onPressed: _showExitConfirmation, // Tampilkan modal saat diklik
           icon: SvgPicture.asset(
             'assets/berandaassets/logout.svg',
             width: 25,

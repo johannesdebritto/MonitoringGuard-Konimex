@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:monitoring_guard_frontend/widgets/custom_modal.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'tugas_screen_logic.dart';
 
 class TugasScreen extends StatefulWidget {
   const TugasScreen({super.key});
@@ -15,42 +12,41 @@ class TugasScreen extends StatefulWidget {
 }
 
 class _TugasScreenState extends State<TugasScreen> {
+  final TugasScreenLogic _logic = TugasScreenLogic();
   List tugasList = [];
-  String namaAnggota1 = "";
+  String namaAnggota = "";
+  Map<String, int> statusCache = {}; // Cache status tugas per id_tugas
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-    fetchTugas();
+    _loadData();
   }
 
-  Future<void> _loadUserData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() => namaAnggota1 = prefs.getString('anggota1') ?? namaAnggota1);
-  }
+  Future<void> _loadData() async {
+    try {
+      namaAnggota = await _logic.loadUserData();
+      tugasList = await _logic.fetchTugas();
 
-  Future<void> fetchTugas() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? idUnit = prefs.getString('id_unit');
-    if (idUnit == null) return;
-
-    final response = await http
-        .get(Uri.parse('${dotenv.env['BASE_URL']}/api/tugas/$idUnit'));
-    if (response.statusCode == 200) {
-      setState(() => tugasList = json.decode(response.body));
-    } else {
-      print("Gagal mengambil data tugas");
+      await _cekStatusSemuaTugas(); // Fetch status setelah dapat daftar tugas
+      setState(() {}); // Update UI setelah semua selesai
+    } catch (e) {
+      print("❌ Error saat memuat data: $e");
     }
   }
 
-  Future<Map<String, dynamic>?> fetchRekap(String idTugas) async {
-    final response = await http
-        .get(Uri.parse('${dotenv.env['BASE_URL']}/api/tugas/rekap/$idTugas'));
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    }
-    return null;
+  Future<void> _cekStatusSemuaTugas() async {
+    if (tugasList.isEmpty) return;
+
+    await Future.wait(tugasList.map((tugas) async {
+      String idTugas = tugas['id_tugas'].toString();
+      int? status = await _logic.cekStatusTugas(idTugas);
+      if (status != null) {
+        setState(() {
+          statusCache[idTugas] = status;
+        });
+      }
+    }));
   }
 
   @override
@@ -66,13 +62,18 @@ class _TugasScreenState extends State<TugasScreen> {
 
   Widget buildTaskItem(Map tugas) {
     String title = tugas['nama_tugas'];
-    String status = tugas['nama_status'];
     String idTugas = tugas['id_tugas'].toString();
-    Color statusColor = status == "Selesai"
-        ? Colors.green.shade400
-        : status == "Belum Selesai"
-            ? const Color(0xFFFCA311)
-            : Colors.red.shade400;
+    String idRiwayat = tugas['id_riwayat'].toString();
+    int? status = statusCache[idTugas];
+
+    final Map<int, Map<String, dynamic>> statusData = {
+      0: {'text': 'Belum Selesai', 'color': const Color(0xFFFCA311)},
+      2: {'text': 'Selesai', 'color': Colors.green.shade400},
+      3: {'text': 'Ada Masalah', 'color': Colors.red.shade400},
+    };
+
+    final statusText = statusData[status]?['text'] ?? 'Belum Selesai';
+    final statusColor = statusData[status]?['color'] ?? const Color(0xFFFCA311);
 
     return Row(
       children: [
@@ -80,8 +81,10 @@ class _TugasScreenState extends State<TugasScreen> {
           width: 20,
           height: 20,
           margin: const EdgeInsets.only(right: 8),
-          decoration:
-              const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+          decoration: const BoxDecoration(
+            color: Colors.black,
+            shape: BoxShape.circle,
+          ),
         ),
         Expanded(
           child: Card(
@@ -97,28 +100,39 @@ class _TugasScreenState extends State<TugasScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title,
-                            style: GoogleFonts.inter(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade900)),
+                        Text(
+                          title,
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade900,
+                          ),
+                        ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Text("Status: ",
-                                style: GoogleFonts.inter(
-                                    fontSize: 14, fontWeight: FontWeight.bold)),
+                            Text(
+                              "Status: ",
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   vertical: 4, horizontal: 8),
                               decoration: BoxDecoration(
-                                  color: statusColor.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8)),
-                              child: Text(status,
-                                  style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: statusColor)),
+                                color: statusColor.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                statusText,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: statusColor,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -128,36 +142,53 @@ class _TugasScreenState extends State<TugasScreen> {
                   const SizedBox(width: 8),
                   Column(
                     children: [
-                      Text('Detail',
-                          style: GoogleFonts.inter(
-                              fontSize: 14, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Detail',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 2),
                       Container(
                         decoration: BoxDecoration(
-                            color: const Color(0xFF7F56D9),
-                            borderRadius: BorderRadius.circular(10)),
+                          color: const Color(0xFF7F56D9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         child: IconButton(
                           onPressed: () async {
-                            var rekapData = await fetchRekap(idTugas);
-                            showDialog(
-                              context: context,
-                              builder: (context) => CustomModalWidgets(
-                                status: status,
-                                namaTugas: title,
-                                namaAnggota1: namaAnggota1,
-                                rekapData: rekapData,
-                                idTugas: idTugas,
-                              ),
-                            );
+                            try {
+                              await _logic.fetchRekap(idTugas);
+                              if (context.mounted) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => CustomModalWidgets(
+                                    namaTugas: title,
+                                    namaAnggota: namaAnggota,
+                                    idTugas: idTugas,
+                                    idRiwayat: idRiwayat,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Gagal memuat data: $e'),
+                                  ),
+                                );
+                              }
+                            }
                           },
                           icon: SvgPicture.asset(
-                              'assets/berandaassets/search.svg',
-                              width: 28,
-                              height: 28),
+                            'assets/berandaassets/search.svg',
+                            width: 28,
+                            height: 28,
+                          ),
                         ),
                       ),
                     ],
-                  ),
+                  )
                 ],
               ),
             ),

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:intl/intl.dart';
-import 'package:monitoring_guard_frontend/widgets/patroli_dalam_modal.dart';
+import 'tugas_dalam_logic.dart';
 
 class TugasDalamScreen extends StatefulWidget {
-  const TugasDalamScreen({super.key});
+  final Function(int) onJumlahMasalahUpdate;
+
+  const TugasDalamScreen({super.key, required this.onJumlahMasalahUpdate});
 
   @override
   State<TugasDalamScreen> createState() => _TugasDalamScreenState();
@@ -15,59 +13,51 @@ class TugasDalamScreen extends StatefulWidget {
 
 class _TugasDalamScreenState extends State<TugasDalamScreen> {
   List<Map<String, dynamic>> _patroliData = [];
+  int _jumlahMasalah = 0;
   bool _isLoading = true;
   bool _isError = false;
+  late String idRiwayat;
+  final TugasDalamLogic logic = TugasDalamLogic();
 
   @override
   void initState() {
     super.initState();
-    _fetchPatroliData();
+    _loadData();
   }
 
-  Future<void> _fetchPatroliData() async {
-    try {
-      final url =
-          Uri.parse('${dotenv.env['BASE_URL']}/api/tugas_dalam/patroli-dalam');
-      final response = await http.get(url);
+  void _updateJumlahMasalah(int newJumlah) {
+    setState(() {
+      _jumlahMasalah = newJumlah; // Perbaikan nama variabel
+    });
+  }
 
-      if (response.statusCode == 200) {
-        List<dynamic> jsonData = json.decode(response.body);
-        setState(() {
-          _patroliData = List<Map<String, dynamic>>.from(jsonData);
-          _isLoading = false;
-        });
-      } else {
-        throw Exception('Gagal mengambil data');
-      }
+  void _updatePatroliData(List<Map<String, dynamic>> newData) {
+    setState(() {
+      _patroliData = newData;
+    });
+  }
+
+  // Fungsi untuk memuat data
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+    });
+
+    try {
+      final data = await logic.initializeData(_updateJumlahMasalah);
+      setState(() {
+        idRiwayat = data['idRiwayat'];
+        _jumlahMasalah = data['jumlahMasalah'];
+        _patroliData = data['patroliData'];
+        _isLoading = false;
+      });
     } catch (e) {
+      print('Error loading data: $e');
       setState(() {
         _isLoading = false;
         _isError = true;
       });
-    }
-  }
-
-  void _showPatroliDalamModal() async {
-    bool? isDataAdded = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return PatroliDalamModal();
-      },
-    );
-
-    if (isDataAdded == true) {
-      _fetchPatroliData();
-    }
-  }
-
-// Fungsi untuk mengonversi waktu ke format "HH:mm WIB"
-  String formatWaktu(String? waktu) {
-    if (waktu == null || waktu.isEmpty) return "-";
-    try {
-      final parsedTime = DateFormat("HH:mm:ss").parse(waktu);
-      return DateFormat("HH:mm").format(parsedTime) + " WIB";
-    } catch (e) {
-      return "-";
     }
   }
 
@@ -79,26 +69,46 @@ class _TugasDalamScreenState extends State<TugasDalamScreen> {
           Positioned(
             top: 20,
             left: 20,
-            child: ElevatedButton.icon(
-              onPressed: _showPatroliDalamModal,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE65100),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => logic.showPatroliDalamModal(
+                    context,
+                    _updatePatroliData,
+                    _updateJumlahMasalah, // Pastikan ini ada di StatefulWidget
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE65100),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                  ),
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: Text(
+                    'Keterangan Masalah',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: Text(
-                'Keterangan Masalah',
-                style: GoogleFonts.inter(
-                    fontWeight: FontWeight.bold, color: Colors.white),
-              ),
+                const SizedBox(height: 10),
+                Text(
+                  "Total Masalah: $_jumlahMasalah",
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
             ),
           ),
           Positioned.fill(
-            top: 55,
+            top: 75,
             bottom: 48,
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -121,6 +131,7 @@ class _TugasDalamScreenState extends State<TugasDalamScreen> {
     );
   }
 
+  // Widget untuk membuat card patroli
   Widget _buildPatroliCard(Map<String, dynamic> data) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -168,13 +179,12 @@ class _TugasDalamScreenState extends State<TugasDalamScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            // Ubah bagian teks waktu di `_buildPatroliCard`
             Row(
               children: [
                 const Icon(Icons.access_time, color: Colors.black54),
                 const SizedBox(width: 8),
                 Text(
-                  "Waktu: ${formatWaktu(data['jam_selesai'])}",
+                  "Waktu: ${logic.formatWaktu(data['jam_selesai'])}",
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

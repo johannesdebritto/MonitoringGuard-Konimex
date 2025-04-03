@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:monitoring_guard_frontend/riwayatpage/daftar_riwayat_luar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:monitoring_guard_frontend/riwayatpage/daftar_riwayat_luar_logic.dart';
 import 'package:monitoring_guard_frontend/riwayatpage/daftar_riwayat_dalam.dart';
 
 class RiwayatKontenScreen extends StatefulWidget {
-  final String tipePatroli; // 🔥 Tambahkan tipePatroli sebagai parameter
+  final String tipePatroli;
 
   const RiwayatKontenScreen({super.key, required this.tipePatroli});
 
@@ -14,6 +15,21 @@ class RiwayatKontenScreen extends StatefulWidget {
 }
 
 class _RiwayatKontenScreenState extends State<RiwayatKontenScreen> {
+  String? _idRiwayat;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIdRiwayat();
+  }
+
+  Future<void> _loadIdRiwayat() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _idRiwayat = prefs.getString('id_riwayat');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Align(
@@ -67,12 +83,12 @@ class _RiwayatKontenScreenState extends State<RiwayatKontenScreen> {
               ],
             ),
             const SizedBox(height: 5),
-
-            // 🔥 Ganti tampilan daftar riwayat sesuai tipe patroli
             Expanded(
               child: widget.tipePatroli == "luar"
-                  ? const DaftarRiwayatScreen() // Jika patroli luar
-                  : const DaftarRiwayatDalamScreen(), // Jika patroli dalam
+                  ? const DaftarRiwayatScreen()
+                  : _idRiwayat == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : DetailRiwayatDalam(),
             ),
           ],
         ),

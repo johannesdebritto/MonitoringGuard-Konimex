@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:intl/intl.dart';
+import 'custom_modal_logic.dart';
 
 class CustomModalWidgets extends StatefulWidget {
-  final String status, namaAnggota1, namaTugas, idTugas;
+  final String namaAnggota, namaTugas, idTugas, idRiwayat;
 
   const CustomModalWidgets({
     super.key,
-    required this.status,
-    required this.namaAnggota1,
+    required this.namaAnggota,
     required this.namaTugas,
     required this.idTugas,
-    Map<String, dynamic>? rekapData,
+    required this.idRiwayat,
   });
 
   @override
@@ -22,72 +18,33 @@ class CustomModalWidgets extends StatefulWidget {
 }
 
 class _CustomModalWidgetsState extends State<CustomModalWidgets> {
-  late Color statusColor;
-  String tanggalSelesai = '--', jamSelesai = '--';
-  String tanggalGagal = '--', jamGagal = '--';
-  List<String> masalahList = [];
+  late CustomModalLogic _logic;
+  bool _isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
-    _setStatusData();
-    _fetchRekapData();
-  }
-
-  void _setStatusData() {
-    switch (widget.status) {
-      case "Selesai":
-        statusColor = const Color(0xFF38B000);
-        break;
-      case "Belum Selesai":
-        statusColor = const Color(0xFFFCA311);
-        break;
-      default:
-        statusColor = const Color(0xFFD00000);
-    }
-  }
-
-  Future<void> _fetchRekapData() async {
-    final response = await http.get(
-      Uri.parse('${dotenv.env['BASE_URL']}/api/tugas/rekap/${widget.idTugas}'),
+    _logic = CustomModalLogic(
+      idTugas: widget.idTugas,
+      idRiwayat: widget.idRiwayat.isNotEmpty
+          ? widget.idRiwayat
+          : '', // Pakai dulu kalau ada
     );
+    _fetchData();
+  }
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+  Future<void> _fetchData() async {
+    try {
+      await _logic.fetchRekapData();
+    } catch (e) {
+      print("Error saat fetch data: $e");
+      _hasError = true;
+    }
+    if (mounted) {
       setState(() {
-        if (widget.status == "Selesai") {
-          tanggalSelesai = _formatTanggal(data['tanggal_selesai']);
-          jamSelesai = _formatJam(data['jam_selesai']);
-        }
-
-        if (widget.status == "Ada Masalah") {
-          tanggalGagal = _formatTanggal(data['tanggal_gagal']);
-          jamGagal = _formatJam(data['jam_gagal']);
-          masalahList = data['keterangan_masalah'] != null
-              ? [data['keterangan_masalah']]
-              : [];
-        }
+        _isLoading = false;
       });
-    }
-  }
-
-  String _formatTanggal(String? date) {
-    if (date == null || date.isEmpty) return '--';
-    try {
-      DateTime parsedDate = DateTime.parse(date).toLocal();
-      return DateFormat('dd-MM-yyyy').format(parsedDate);
-    } catch (e) {
-      return '--';
-    }
-  }
-
-  String _formatJam(String? time) {
-    if (time == null || time.isEmpty) return '--';
-    try {
-      DateTime parsedTime = DateTime.parse("1970-01-01T$time").toLocal();
-      return DateFormat('HH:mm').format(parsedTime) + ' WIB';
-    } catch (e) {
-      return '--';
     }
   }
 
@@ -97,28 +54,61 @@ class _CustomModalWidgetsState extends State<CustomModalWidgets> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            _buildTextField('Nama Petugas', widget.namaAnggota1),
-            _buildTextField('Tugas', widget.namaTugas),
-            if (widget.status == "Selesai") ...[
-              _buildTextField('Tanggal Selesai', tanggalSelesai),
-              _buildTextField('Jam Selesai', jamSelesai),
-            ],
-            if (widget.status == "Ada Masalah") ...[
-              _buildTextField('Tanggal Gagal', tanggalGagal),
-              _buildTextField('Jam Gagal', jamGagal),
-              _buildTextField('Keterangan Masalah', masalahList.join('\n')),
-            ],
-            _buildStatusField(),
-            const SizedBox(height: 20),
-            _buildCloseButton(),
-          ],
-        ),
+        child: _isLoading
+            ? _buildLoading()
+            : _hasError
+                ? _buildError()
+                : _buildDialog(),
       ),
+    );
+  }
+
+  Widget _buildLoading() {
+    return SizedBox(
+      height: 100,
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildError() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(Icons.error, color: Colors.red, size: 50),
+        SizedBox(height: 10),
+        Text(
+          'Gagal memuat data.',
+          style: GoogleFonts.inter(
+              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
+        ),
+        SizedBox(height: 10),
+        _buildCloseButton(),
+      ],
+    );
+  }
+
+  Widget _buildDialog() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(),
+        _buildTextField('Nama Petugas', widget.namaAnggota),
+        _buildTextField('Tugas', widget.namaTugas),
+        if (_logic.status == "Selesai") ...[
+          _buildTextField('Tanggal Selesai', _logic.tanggalSelesai),
+          _buildTextField('Jam Selesai', _logic.jamSelesai),
+        ],
+        if (_logic.status == "Ada Masalah") ...[
+          _buildTextField('Tanggal Gagal', _logic.tanggalGagal),
+          _buildTextField('Jam Gagal', _logic.jamGagal),
+          _buildTextField('Keterangan Masalah', _logic.masalahList.join('\n')),
+        ],
+        _buildStatusField(),
+        const SizedBox(height: 20),
+        _buildCloseButton(),
+      ],
     );
   }
 
@@ -138,7 +128,7 @@ class _CustomModalWidgetsState extends State<CustomModalWidgets> {
     );
   }
 
-  Widget _buildTextField(String label, String value) {
+  Widget _buildTextField(String label, String? value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -148,7 +138,7 @@ class _CustomModalWidgetsState extends State<CustomModalWidgets> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
           decoration: _boxDecoration(),
-          child: Text(value,
+          child: Text(value ?? '-',
               style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
         ),
         const SizedBox(height: 10),
@@ -157,6 +147,7 @@ class _CustomModalWidgetsState extends State<CustomModalWidgets> {
   }
 
   Widget _buildStatusField() {
+    final statusColor = _logic.getStatusColor();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -169,7 +160,7 @@ class _CustomModalWidgetsState extends State<CustomModalWidgets> {
               color: statusColor.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8)),
           alignment: Alignment.center,
-          child: Text(widget.status,
+          child: Text(_logic.status,
               style: GoogleFonts.inter(
                   color: statusColor, fontWeight: FontWeight.bold)),
         ),

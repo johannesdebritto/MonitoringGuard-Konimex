@@ -30,13 +30,15 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
   @override
   void initState() {
     super.initState();
-    _loadNamaAnggota();
+    _loadUserData();
   }
 
-  Future<void> _loadNamaAnggota() async {
+  Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      namaAnggota = prefs.getString('nama_anggota') ?? '';
+      namaAnggota = prefs.getString('anggota_terpilih') ??
+          prefs.getString('anggota1') ??
+          "Anggota Tidak Diketahui";
     });
   }
 
@@ -50,7 +52,6 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
 
     final isMasalah = widget.status == "masalah";
     final baseUrl = dotenv.env['BASE_URL'];
-    final url = '$baseUrl/api/tugas/update-status/${widget.idTugas}';
     final rekapUrl = isMasalah
         ? '$baseUrl/api/tugas/rekap-tidak-aman/${widget.idTugas}'
         : '$baseUrl/api/tugas/rekap-selesai/${widget.idTugas}';
@@ -59,30 +60,25 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
       "id_status": isMasalah ? 3 : 2,
       "waktu": DateTime.now().toIso8601String(),
       "nama_anggota": namaAnggota,
+      "id_riwayat": widget.idTugas,
       if (isMasalah) "keterangan": _keteranganController.text,
     });
 
     try {
-      await http.put(
-        Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"id_status": isMasalah ? 3 : 2}),
-      );
-
       final response = await http.put(
         Uri.parse(rekapUrl),
         headers: {"Content-Type": "application/json"},
         body: body,
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 204) {
         widget.onConfirm();
         if (mounted) Navigator.of(context).pop();
       } else {
-        showError("Gagal memperbarui status: \${response.body}");
+        showError("Gagal memperbarui rekap: ${response.body}");
       }
     } catch (e) {
-      showError("Terjadi kesalahan: \$e");
+      showError("Terjadi kesalahan: $e");
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

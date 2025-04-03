@@ -1,116 +1,183 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:monitoring_guard_frontend/riwayatpage/konten_riwayat_luar.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:monitoring_guard_frontend/riwayatpage/detail_riwayat_luar.dart';
+import 'package:monitoring_guard_frontend/riwayatpage/detail_riwayat_luar_logic.dart';
 
-class DaftarRiwayatScreen extends StatefulWidget {
-  const DaftarRiwayatScreen({Key? key}) : super(key: key);
+class KontenRiwayatScreen extends StatefulWidget {
+  final Map<String, dynamic> item;
+  final String namaUnit;
+
+  const KontenRiwayatScreen({
+    Key? key,
+    required this.item,
+    required this.namaUnit,
+  }) : super(key: key);
 
   @override
-  _DaftarRiwayatScreenState createState() => _DaftarRiwayatScreenState();
+  State<KontenRiwayatScreen> createState() => _KontenRiwayatScreenState();
 }
 
-class _DaftarRiwayatScreenState extends State<DaftarRiwayatScreen> {
-  List riwayatList = [];
-  bool isLoading = true;
-  String errorMessage = '';
-  String namaUnit = '';
+class _KontenRiwayatScreenState extends State<KontenRiwayatScreen> {
+  KontenRiwayatLogic? logic; // Nullable biar nggak error
 
   @override
   void initState() {
     super.initState();
-    fetchRiwayat();
+    logic = KontenRiwayatLogic(widget.item, () => setState(() {}));
+    logic!.init();
   }
 
-  Future<void> fetchRiwayat() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? idUnit = prefs.getString('id_unit');
-    namaUnit = prefs.getString('nama_unit') ?? 'Unit Tidak Diketahui';
-
-    if (idUnit == null) {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'ID Unit tidak ditemukan';
-      });
-      return;
-    }
-
-    final url = Uri.parse('${dotenv.env['BASE_URL']}/api/submit/unit/$idUnit');
-
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        setState(() {
-          riwayatList = json.decode(response.body);
-          isLoading = false;
-        });
-      } else if (response.statusCode == 404) {
-        setState(() {
-          riwayatList = [];
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Gagal mengambil data (${response.statusCode})');
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'Terjadi kesalahan saat mengambil data';
-      });
-      print('Error: $e');
-    }
+  String _formatWaktu(String? waktu) {
+    if (waktu == null || waktu.isEmpty) return "-";
+    return "$waktu WIB";
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : errorMessage.isNotEmpty
-              ? Center(
-                  child: Text(errorMessage, style: GoogleFonts.inter()),
-                )
-              : Padding(
-                  padding: EdgeInsets.all(16),
-                  child: riwayatList.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                LucideIcons.folderOpen,
-                                size: 48, // Ukuran ikon lebih besar
-                                color: const Color.fromARGB(255, 0, 0,
-                                    0), // Warna ikon agar tidak mencolok
-                              ),
-                              SizedBox(
-                                  height: 10), // Jarak antara ikon dan teks
-                              Text(
-                                'Tidak ada riwayat Tugas',
-                                style: GoogleFonts.inter(
-                                  fontSize: 18, // Perbesar ukuran font
-                                  fontWeight: FontWeight.bold, // Tebalkan teks
-                                  color: const Color.fromARGB(255, 0, 0,
-                                      0), // Warna teks sedikit lebih lembut
+    if (logic == null) {
+      return const Center(
+          child: CircularProgressIndicator()); // Hindari error sebelum init
+    }
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Pengecekan ${widget.namaUnit}",
+                    style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade900),
+                  ),
+                  Divider(thickness: 1, height: 12),
+                  _buildTextRow("Hari", widget.item['hari']),
+                  _buildTextRow("Tanggal", widget.item['tanggal']),
+                  _buildTextRow("Waktu Mulai",
+                      _formatWaktu(widget.item['waktu_mulai_luar'])),
+                  _buildTextRow("Waktu Selesai",
+                      _formatWaktu(widget.item['waktu_selesai_luar'])),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        "Status: ",
+                        style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.green, width: 1.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          widget.item['nama_status'],
+                          style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              children: [
+                Text(
+                  'Detail',
+                  style: GoogleFonts.inter(
+                      fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 2),
+                Container(
+                  decoration: BoxDecoration(
+                    color: logic!.isLoading
+                        ? Colors.grey.shade400
+                        : const Color(0xFF7F56D9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: logic!.isLoading
+                      ? Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: const CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2.5),
+                        )
+                      : IconButton(
+                          onPressed: () {
+                            if (logic!.detailRiwayat.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("⚠️ Belum ada riwayat!"),
+                                  backgroundColor: Colors.orange,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetailRiwayatScreen(
+                                  idRiwayat:
+                                      logic!.detailRiwayat.first['id_rekap'],
+                                  riwayatItem: logic!.detailRiwayat,
                                 ),
                               ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: riwayatList.length,
-                          itemBuilder: (context, index) {
-                            return KontenRiwayatScreen(
-                              item: riwayatList[index],
-                              namaUnit: namaUnit,
                             );
                           },
+                          icon: SvgPicture.asset(
+                            'assets/berandaassets/search.svg',
+                            width: 28,
+                            height: 28,
+                            colorFilter: const ColorFilter.mode(
+                                Colors.white, BlendMode.srcIn),
+                          ),
                         ),
                 ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextRow(String title, dynamic value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text(
+            "$title: ",
+            style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87),
+          ),
+          Text(
+            value != null ? value.toString() : "Tidak tersedia",
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.black87),
+          ),
+        ],
+      ),
     );
   }
 }

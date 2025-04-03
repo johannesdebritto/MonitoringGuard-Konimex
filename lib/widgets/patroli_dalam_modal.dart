@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'patroli_dalam_logic.dart';
 
 class PatroliDalamModal extends StatefulWidget {
   @override
@@ -13,104 +11,155 @@ class _PatroliDalamModalState extends State<PatroliDalamModal> {
   final TextEditingController _bagianController = TextEditingController();
   final TextEditingController _keteranganController = TextEditingController();
   bool _isLoading = false;
+  final PatroliDalamLogic _logic = PatroliDalamLogic();
 
   Future<void> _submitPatroliDalam() async {
     setState(() {
       _isLoading = true;
     });
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? namaAnggota = prefs.getString('anggota_terpilih');
-
-    // Cek apakah id_riwayat disimpan sebagai String atau Int
-    String? idRiwayatString = prefs.getString('id_riwayat');
-    int? idRiwayat = idRiwayatString != null
-        ? int.tryParse(idRiwayatString)
-        : prefs.getInt('id_riwayat');
-
-    if (namaAnggota == null || idRiwayat == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Anggota atau ID Riwayat belum dipilih")),
+    try {
+      final result = await _logic.submitPatroliDalam(
+        context,
+        _bagianController.text.trim(),
+        _keteranganController.text.trim(),
       );
-      setState(() {
-        _isLoading = false;
-      });
-      return;
+
+      if (result) {
+        Navigator.pop(context, "submitted");
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-
-    String bagian = _bagianController.text.trim();
-    String keterangan = _keteranganController.text.trim();
-
-    if (bagian.isEmpty || keterangan.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Bagian dan keterangan tidak boleh kosong")),
-      );
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-
-    final url = Uri.parse(
-        '${dotenv.env['BASE_URL']}/api/tugas_dalam/submit-patroli-dalam');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "id_riwayat": idRiwayat,
-        "nama_anggota": namaAnggota,
-        "id_status": 1,
-        "bagian": bagian,
-        "keterangan_masalah": keterangan,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Patroli dalam berhasil disimpan")),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text("Gagal menyimpan patroli dalam: ${response.body}")),
-      );
-    }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Tambah Patroli Dalam"),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _bagianController,
-            decoration: const InputDecoration(labelText: "Bagian"),
-          ),
-          TextField(
-            controller: _keteranganController,
-            decoration: const InputDecoration(labelText: "Keterangan Masalah"),
-          ),
-        ],
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 16),
+            _buildTextField('Bagian', _bagianController),
+            const SizedBox(height: 10),
+            _buildTextField('Keterangan Masalah', _keteranganController),
+            const SizedBox(height: 20),
+            _buildActionButtons(),
+          ],
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Batal"),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: _boxDecoration(),
+          child: const Icon(Icons.add_task, color: Colors.black54),
         ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _submitPatroliDalam,
-          child: _isLoading
-              ? const CircularProgressIndicator()
-              : const Text("Simpan"),
+        const SizedBox(width: 8),
+        Text('Tambah Patroli Dalam',
+            style:
+                GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Container(
+          decoration: _boxDecoration(),
+          child: TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+              border: InputBorder.none,
+              hintText: 'Masukkan $label',
+              hintStyle: GoogleFonts.inter(fontWeight: FontWeight.w500),
+            ),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(color: Colors.grey.shade400),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context),
+            child: Text('Batal',
+                style: GoogleFonts.inter(
+                    color: Colors.black87,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7F56D9),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(vertical: 15),
+            ),
+            onPressed: _isLoading ? null : _submitPatroliDalam,
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text('Simpan',
+                    style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  BoxDecoration _boxDecoration() {
+    return BoxDecoration(
+      border: Border.all(color: Colors.grey.shade400),
+      borderRadius: BorderRadius.circular(8),
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(2, 2))
       ],
     );
   }

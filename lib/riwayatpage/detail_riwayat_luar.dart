@@ -15,6 +15,11 @@ class DetailRiwayatScreen extends StatefulWidget {
   State<DetailRiwayatScreen> createState() => _DetailRiwayatScreenState();
 }
 
+String _formatWaktu(String waktu) {
+  if (waktu.isEmpty || waktu == "-") return "-";
+  return "$waktu WIB";
+}
+
 class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
   @override
   Widget build(BuildContext context) {
@@ -105,7 +110,7 @@ class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
             const SizedBox(height: 5),
             Text('* Tanggal : ${formatTanggal(tanggalSelesai)}',
                 style: GoogleFonts.inter(fontSize: 14)),
-            Text('* Jam Selesai : ${cekNull(jamSelesai)}',
+            Text('* Jam Selesai : ${_formatWaktu(cekNull(jamSelesai))}',
                 style: GoogleFonts.inter(fontSize: 14)),
             Text('* Keterangan : ${cekNull(keterangan)}',
                 style: GoogleFonts.inter(fontSize: 14)),

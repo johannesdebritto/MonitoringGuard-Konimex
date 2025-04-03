@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:monitoring_guard_frontend/authenticationpage/login.dart';
 
 typedef OnLogout = VoidCallback;
 
 class HomeSelectionIdentitas extends StatefulWidget {
   final OnLogout onLogout;
-  final Function(String, List<String>) onIdRiwayatLoaded; // Ubah tipe parameter
+  final Function(String, List<String>) onIdRiwayatLoaded;
 
   const HomeSelectionIdentitas({
     super.key,
@@ -53,6 +54,17 @@ class _HomeSelectionIdentitasState extends State<HomeSelectionIdentitas> {
     });
   }
 
+  Future<void> _logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Hapus semua data di SharedPreferences
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false, // Hapus semua halaman sebelumnya
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Positioned(
@@ -64,15 +76,15 @@ class _HomeSelectionIdentitasState extends State<HomeSelectionIdentitas> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(30), // Sudut kiri bawah melengkung
-            bottomRight: Radius.circular(30), // Sudut kanan bawah melengkung
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2), // Warna bayangan
-              blurRadius: 5, // Efek blur shadow
-              spreadRadius: 4, // Luas bayangan
-              offset: const Offset(0, 7), // Bayangan ke bawah
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 5,
+              spreadRadius: 4,
+              offset: const Offset(0, 7),
             ),
           ],
         ),
@@ -107,7 +119,7 @@ class _HomeSelectionIdentitasState extends State<HomeSelectionIdentitas> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                onPressed: widget.onLogout,
+                onPressed: _logout,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   padding:

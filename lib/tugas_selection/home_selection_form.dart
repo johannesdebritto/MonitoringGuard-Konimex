@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:monitoring_guard_frontend/history/history.dart';
 
 class HomeSelectionForm extends StatefulWidget {
   final VoidCallback onPatroliDalam;
@@ -51,7 +52,13 @@ class _HomeSelectionFormState extends State<HomeSelectionForm> {
                 _buildButton(
                   icon: LucideIcons.history,
                   label: "Histori",
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const HistoryPage()),
+                    );
+                  },
                 ),
               ],
             ),

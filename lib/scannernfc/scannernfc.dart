@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:monitoring_guard_frontend/main.dart';
-import 'package:monitoring_guard_frontend/widgets/modal_nfc.dart'; // Import modal
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:monitoring_guard_frontend/scannernfc/nfc_scanner_logic.dart';
 
 class NFCScannerScreen extends StatefulWidget {
   const NFCScannerScreen({super.key});
@@ -22,58 +19,15 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
   @override
   void initState() {
     super.initState();
-    fetchTugas();
+    _loadTugas();
   }
 
-  // Ambil data tugas dari backend berdasarkan id_unit
-  Future<void> fetchTugas() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? idUnit = prefs.getString('id_unit');
-
-      if (idUnit == null) {
-        print("ID Unit tidak ditemukan");
-        setState(() {
-          isLoading = false;
-        });
-        return;
-      }
-
-      final response = await http.get(
-        Uri.parse('${dotenv.env['BASE_URL']}/api/tugas/$idUnit'),
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          tugasList = jsonDecode(response.body);
-          isLoading = false;
-        });
-      } else {
-        print("Gagal mengambil data tugas");
-        setState(() {
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      print("Error: $e");
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  // Fungsi untuk update status setelah konfirmasi di modal
-  void showNFCModal(Map<String, dynamic> tugas, String status) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return NFCModalScreen(
-          status: status, // "aman" atau "masalah"
-          idTugas: tugas['id_tugas'].toString(),
-          onConfirm: fetchTugas, // Refresh daftar tugas setelah update
-        );
-      },
-    );
+  Future<void> _loadTugas() async {
+    final data = await NFCScannerLogic.fetchTugas();
+    setState(() {
+      tugasList = data;
+      isLoading = false;
+    });
   }
 
   @override
@@ -99,41 +53,39 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator())
                   : tugasList.isEmpty
-                      ? Center(child: Text("Tidak ada tugas tersedia"))
+                      ? const Center(child: Text("Tidak ada tugas tersedia"))
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: tugasList.length,
                           itemBuilder: (context, index) {
                             var tugas = tugasList[index];
-                            return buildTaskItem(tugas);
+                            return _buildTaskItem(tugas, context);
                           },
                         ),
             ),
             const SizedBox(height: 16),
-
-// Tombol kembali ke MainNavigation
             ElevatedButton(
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => MainNavigation(
-                      tipePatroli: 'luar', // Ganti dengan tipe yang sesuai
+                      tipePatroli: 'luar',
                     ),
                   ),
                 );
               },
               style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
               child: Text('Kembali', style: GoogleFonts.inter(fontSize: 16)),
             ),
-
             const SizedBox(height: 16),
           ],
         ),
@@ -141,10 +93,7 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
     );
   }
 
-  // Widget untuk menampilkan item tugas (nama tugas di kiri, tombol di kanan)
-  Widget buildTaskItem(Map<String, dynamic> tugas) {
-    String title = tugas['nama_tugas'];
-
+  Widget _buildTaskItem(Map<String, dynamic> tugas, BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
@@ -155,10 +104,9 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
         padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
-            // Nama Tugas (pojok kiri)
             Expanded(
               child: Text(
-                title,
+                tugas['nama_tugas'],
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -166,15 +114,19 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
                 ),
               ),
             ),
-            // Tombol "Aman" dan "Ada Masalah" (pojok kanan, berjejeran)
             Row(
               children: [
                 ElevatedButton(
-                  onPressed: () => showNFCModal(tugas, "aman"),
+                  onPressed: () => NFCScannerLogic.showNFCModal(
+                    context: context,
+                    tugas: tugas,
+                    status: "aman",
+                    onConfirm: _loadTugas,
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    padding: EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8), // Ukuran tombol
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   child: Text(
                     'Aman',
@@ -185,13 +137,18 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8), // Jarak antara tombol
+                const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () => showNFCModal(tugas, "masalah"),
+                  onPressed: () => NFCScannerLogic.showNFCModal(
+                    context: context,
+                    tugas: tugas,
+                    status: "masalah",
+                    onConfirm: _loadTugas,
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
-                    padding: EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8), // Ukuran tombol
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   child: Text(
                     'Ada Masalah',

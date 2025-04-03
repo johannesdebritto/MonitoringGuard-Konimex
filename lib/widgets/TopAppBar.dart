@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:monitoring_guard_frontend/authenticationpage/login.dart';
-
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:monitoring_guard_frontend/tugas_selection/home_selection.dart';
 
 class TopBarScreen extends StatefulWidget {
   final String title;
@@ -14,14 +12,10 @@ class TopBarScreen extends StatefulWidget {
 }
 
 class _TopBarScreenState extends State<TopBarScreen> {
-  Future<void> _logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Hapus semua data di SharedPreferences
-
-    // Navigasi ke halaman login dan hapus semua halaman sebelumnya
+  void _navigateToHome() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => const HomeSelectionScreen()),
       (route) => false, // Hapus semua halaman sebelumnya
     );
   }
@@ -40,7 +34,7 @@ class _TopBarScreenState extends State<TopBarScreen> {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: _logout,
+          onPressed: _navigateToHome,
           icon: SvgPicture.asset(
             'assets/berandaassets/logout.svg',
             width: 25,
@@ -48,7 +42,7 @@ class _TopBarScreenState extends State<TopBarScreen> {
             color: Colors.white,
           ),
           label: Text(
-            'Logout',
+            'Keluar',
             style: GoogleFonts.inter(
               fontSize: 16,
               color: Colors.white,

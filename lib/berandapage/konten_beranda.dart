@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:monitoring_guard_frontend/berandapage/tugas.dart';
 import 'package:monitoring_guard_frontend/berandapage/tugas_selesai.dart';
 import 'package:monitoring_guard_frontend/berandapage/tugas_dalam.dart';
-import 'package:monitoring_guard_frontend/widgets/modal_submit_luar.dart';
-import 'package:monitoring_guard_frontend/widgets/modal_submit_dalam.dart'; // Import modal submit dalam
+import 'package:monitoring_guard_frontend/widgets/modal_submit_dalam.dart';
+import 'konten_beranda_logic.dart';
 
 class KontenBeranda extends StatefulWidget {
   final String tipePatroli;
-
   const KontenBeranda({super.key, required this.tipePatroli});
 
   @override
@@ -21,128 +16,66 @@ class KontenBeranda extends StatefulWidget {
 }
 
 class _KontenBerandaState extends State<KontenBeranda> {
-  bool _isSubmitted = false;
+  final KontenBerandaLogic _logic = KontenBerandaLogic();
 
   @override
   void initState() {
     super.initState();
-    _fetchStatus();
-    _loadStatus();
+    _logic.fetchStatus();
+    _logic.loadStatus();
+    _logic.loadStatusDalam();
   }
 
-  Future<void> _loadStatus() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isSubmitted = prefs.getBool('isSubmitted') ?? false;
-    });
-  }
-
-  Future<void> _fetchStatus() async {
+  Future<void> _handleSubmit() async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? idUnit = prefs.getString('id_unit');
-
-      if (idUnit == null) {
-        print("🚨 ID Unit tidak ditemukan, coba login ulang?");
-        return;
-      }
-
-      final response = await http.get(
-          Uri.parse('${dotenv.env['BASE_URL']}/api/tugas/status_data/$idUnit'));
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        bool isCompleted = responseData["success"] == true;
-
-        setState(() {
-          _isSubmitted = isCompleted;
-        });
+      if (widget.tipePatroli == "luar") {
+        await _logic.submitTugas(context,
+            showSnackbar: true); // Pastikan snackbar muncul
+        await _logic.fetchStatus(); // Ambil ulang status dari backend
+        if (mounted) setState(() {}); // Update UI setelah status berubah
       } else {
-        print("🚨 Gagal mengambil status: ${response.body}");
-      }
-    } catch (e) {
-      print("🚨 Error fetch status: $e");
-    }
-  }
-
-  Future<void> _submitTugas() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? idRiwayat = prefs.getString('id_riwayat');
-
-      if (idRiwayat == null) {
-        print("🚨 ID Riwayat tidak ditemukan, mungkin login ulang?");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Terjadi kesalahan, coba login ulang")),
+        await _logic.loadStatusDalam();
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => ModalSubmitDalam(
+            jumlahMasalah: _logic.jumlahMasalah,
+            onSubmitSuccess: () =>
+                Navigator.of(context, rootNavigator: true).pop(true),
+          ),
         );
-        return;
-      }
-
-      final response = await http.post(
-        Uri.parse('${dotenv.env['BASE_URL']}/api/submit'),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"id_riwayat": idRiwayat}),
-      );
-
-      final responseData = jsonDecode(response.body);
-
-      if (response.statusCode == 200) {
-        setState(() {
-          _isSubmitted = true;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(responseData["message"])),
-        );
-      } else {
-        if (responseData["message"] == "Selesaikan tugas dulu sebelum submit") {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) => const ModalSubmitScreen(),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(responseData["message"])),
-          );
+        if (result == true) {
+          await _logic.submitTugas(context, showSnackbar: true);
+          await _logic.fetchStatus(); // Ambil ulang status setelah submit
+          if (mounted) setState(() => _logic.isSubmittedDalam = true);
         }
       }
     } catch (e) {
-      print("🚨 Error submit: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal menghubungi server")),
-      );
-    }
-  }
-
-  void _handleSubmit() {
-    if (widget.tipePatroli == "luar") {
-      _submitTugas();
-    } else {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) => const ModalSubmitDalam(),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Terjadi kesalahan, coba lagi nanti")),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLuar = widget.tipePatroli == "luar";
+    final isSubmitted = isLuar ? _logic.isSubmitted : _logic.isSubmittedDalam;
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(35),
-            topRight: Radius.circular(35),
-          ),
+              topLeft: Radius.circular(35), topRight: Radius.circular(35)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              spreadRadius: 5,
-              blurRadius: 10,
-              offset: const Offset(0, -8),
-            ),
+                color: Colors.black.withOpacity(0.3),
+                spreadRadius: 5,
+                blurRadius: 10,
+                offset: const Offset(0, -8))
           ],
         ),
         padding: const EdgeInsets.all(20),
@@ -151,75 +84,56 @@ class _KontenBerandaState extends State<KontenBeranda> {
           children: [
             Row(
               children: [
-                Row(
-                  children: [
-                    SvgPicture.asset(
-                      'assets/berandaassets/tugas.svg',
-                      width: 60,
-                      height: 60,
-                    ),
-                    const SizedBox(width: 1),
-                    Text(
-                      'Tugas Hari Ini !',
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                      softWrap: true,
-                    ),
-                  ],
-                ),
+                SvgPicture.asset('assets/berandaassets/tugas.svg',
+                    width: 60, height: 60),
+                const SizedBox(width: 1),
+                Text('Tugas Hari Ini !',
+                    style: GoogleFonts.inter(
+                        fontSize: 20, fontWeight: FontWeight.bold)),
                 const Spacer(),
-                _isSubmitted
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 30, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          "Selesai",
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      )
-                    : ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7F56D9),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 30, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: _handleSubmit, // 🔥 Pakai fungsi baru
-                        child: Text(
-                          "Submit",
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                isSubmitted
+                    ? _statusBox("Selesai", Colors.green)
+                    : _submitButton(),
               ],
             ),
             const SizedBox(height: 5),
             Expanded(
-              child: _isSubmitted
+              child: isSubmitted
                   ? const TugasSelesaiScreen()
-                  : (widget.tipePatroli == "luar"
+                  : isLuar
                       ? const TugasScreen()
-                      : const TugasDalamScreen()),
+                      : TugasDalamScreen(
+                          onJumlahMasalahUpdate: _logic.updateJumlahMasalah),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _statusBox(String text, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+        decoration: BoxDecoration(
+            color: color, borderRadius: BorderRadius.circular(12)),
+        child: Text(text,
+            style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white)),
+      );
+
+  Widget _submitButton() => ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF7F56D9),
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 16),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        onPressed: _handleSubmit,
+        child: Text("Submit",
+            style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white)),
+      );
 }

@@ -16,24 +16,32 @@ class HomeSelectionScreen extends StatefulWidget {
 }
 
 class _HomeSelectionScreenState extends State<HomeSelectionScreen> {
-  String idRiwayat = "";
-  int jumlahAnggota = 0;
   List<String> anggotaTerpakai = [];
   List<String> semuaAnggota = [];
 
-  void updateIdRiwayat(String newId, List<String> anggotaList) {
+  @override
+  void initState() {
+    super.initState();
+    loadIdRiwayat();
+  }
+
+  Future<void> loadIdRiwayat() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String idRiwayat = prefs.getString('id_riwayat') ?? "";
+    debugPrint("ID Riwayat dari SharedPreferences: $idRiwayat");
+  }
+
+  void updateIdRiwayat(String newId, List<String> anggotaList) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('id_riwayat', newId);
     setState(() {
-      idRiwayat = newId;
       semuaAnggota = anggotaList;
-      jumlahAnggota = anggotaList.length;
     });
   }
 
   void tambahAnggotaTerpakai(String anggota) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        'anggota_terpilih', anggota); // Simpan nama anggota yang dipilih
-
+    await prefs.setString('anggota_terpilih', anggota);
     setState(() {
       anggotaTerpakai.add(anggota);
     });
@@ -44,23 +52,23 @@ class _HomeSelectionScreenState extends State<HomeSelectionScreen> {
     List<String> anggotaList = [
       prefs.getString('anggota1') ?? "",
       prefs.getString('anggota2') ?? ""
-    ].where((a) => a.isNotEmpty).toList(); // Filter hanya yang tidak kosong
+    ].where((a) => a.isNotEmpty).toList();
+
+    debugPrint("Anggota tersedia: $anggotaList");
 
     if (anggotaList.length == 1) {
-      // Langsung update tanpa modal
       String anggota = anggotaList[0];
       await prefs.setString('anggota_terpilih', anggota);
       updateWaktuPatroli(tipePatroli, anggota);
       return;
     }
 
-    // Kalau ada 2 anggota, munculkan modal untuk memilih
     final anggotaTersedia =
         anggotaList.where((a) => !anggotaTerpakai.contains(a)).toList();
 
     if (anggotaTersedia.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Semua anggota sudah melakukan patroli.")),
+        const SnackBar(content: Text("Semua anggota sudah melakukan patroli.")),
       );
       return;
     }
@@ -77,7 +85,20 @@ class _HomeSelectionScreenState extends State<HomeSelectionScreen> {
   }
 
   Future<void> updateWaktuPatroli(String tipe, String anggota) async {
-    if (idRiwayat.isEmpty) return;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String idUnit = prefs.getString('id_unit') ?? "";
+    String idPatroli = prefs.getString('id_patroli') ?? "";
+    String idUnitKerja = prefs.getString('id_unit_kerja') ?? "";
+    String idStatus = tipe == "dalam"
+        ? prefs.getString('id_status_dalam') ?? ""
+        : prefs.getString('id_status_luar') ?? "";
+
+    debugPrint("Mengirim data ke backend:");
+    debugPrint("id_unit: $idUnit");
+    debugPrint("id_patroli: $idPatroli");
+    debugPrint("id_anggota: $anggota");
+    debugPrint("id_unit_kerja: $idUnitKerja");
+    debugPrint("id_status: $idStatus");
 
     final url =
         Uri.parse('${dotenv.env['BASE_URL']}/api/status/update-waktu-$tipe');
@@ -85,19 +106,48 @@ class _HomeSelectionScreenState extends State<HomeSelectionScreen> {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'id_riwayat': idRiwayat, 'anggota': anggota}),
+        body: jsonEncode({
+          'id_unit': idUnit,
+          'id_patroli': idPatroli,
+          'id_anggota': anggota,
+          'id_unit_kerja': idUnitKerja,
+          'id_status': idStatus,
+        }),
       );
 
+      debugPrint("Response status: ${response.statusCode}");
+      debugPrint("Response body: ${response.body}");
+
       if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        /// 🔥 Simpan id_riwayat sebagai String di SharedPreferences
+        int newIdRiwayat = responseData['id_riwayat'] ?? 0;
+        await prefs.setString('id_riwayat', newIdRiwayat.toString());
+
+        debugPrint("ID Riwayat terbaru disimpan: $newIdRiwayat");
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Waktu patroli berhasil diperbarui.")),
+        );
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => MainNavigation(tipePatroli: tipe),
           ),
         );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text("Gagal memperbarui waktu patroli: ${response.body}")),
+        );
       }
     } catch (e) {
       debugPrint('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Terjadi kesalahan, coba lagi.")),
+      );
     }
   }
 

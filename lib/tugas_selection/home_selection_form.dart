@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:monitoring_guard_frontend/history/history.dart';
+import 'package:monitoring_guard_frontend/history/history_logic.dart'; // ✅ jangan lupa import
 
 class HomeSelectionForm extends StatefulWidget {
   final VoidCallback onPatroliDalam;
@@ -18,6 +19,8 @@ class HomeSelectionForm extends StatefulWidget {
 }
 
 class _HomeSelectionFormState extends State<HomeSelectionForm> {
+  final HistoryLogic _historyLogic = HistoryLogic(); // ✅ dibuat sekali aja
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -33,35 +36,35 @@ class _HomeSelectionFormState extends State<HomeSelectionForm> {
             ),
           ),
           const SizedBox(height: 16),
-          Container(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildButton(
-                  icon: LucideIcons.home,
-                  label: "Patroli Dalam",
-                  onPressed: widget.onPatroliDalam,
-                ),
-                const SizedBox(height: 16),
-                _buildButton(
-                  icon: LucideIcons.map,
-                  label: "Patroli Luar",
-                  onPressed: widget.onPatroliLuar,
-                ),
-                const SizedBox(height: 16),
-                _buildButton(
-                  icon: LucideIcons.history,
-                  label: "Histori",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const HistoryPage()),
-                    );
-                  },
-                ),
-              ],
-            ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildButton(
+                icon: LucideIcons.home,
+                label: "Patroli Dalam",
+                onPressed: widget.onPatroliDalam,
+              ),
+              const SizedBox(height: 16),
+              _buildButton(
+                icon: LucideIcons.map,
+                label: "Patroli Luar",
+                onPressed: widget.onPatroliLuar,
+              ),
+              const SizedBox(height: 16),
+              _buildButton(
+                icon: LucideIcons.history,
+                label: "Histori",
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HistoryPage(
+                          logic: _historyLogic), // ✅ kirim logic-nya
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:monitoring_guard_frontend/service/db_helper.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -51,10 +52,12 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
     setState(() => isLoading = true);
 
     final isMasalah = widget.status == "masalah";
-    final baseUrl = dotenv.env['BASE_URL'];
-    final rekapUrl = isMasalah
-        ? '$baseUrl/api/tugas/rekap-tidak-aman/${widget.idTugas}'
-        : '$baseUrl/api/tugas/rekap-selesai/${widget.idTugas}';
+
+    // Komentari bagian ini untuk offline
+    // final baseUrl = dotenv.env['BASE_URL'];
+    // final rekapUrl = isMasalah
+    //     ? '$baseUrl/api/tugas/rekap-tidak-aman/${widget.idTugas}'
+    //     : '$baseUrl/api/tugas/rekap-selesai/${widget.idTugas}';
 
     final body = jsonEncode({
       "id_status": isMasalah ? 3 : 2,
@@ -65,18 +68,50 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
     });
 
     try {
-      final response = await http.put(
-        Uri.parse(rekapUrl),
-        headers: {"Content-Type": "application/json"},
-        body: body,
-      );
+      // Offline version with dbHelper
+      final db = await DBHelper.initDb(); // Initialize the database
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        widget.onConfirm();
-        if (mounted) Navigator.of(context).pop();
-      } else {
-        showError("Gagal memperbarui rekap: ${response.body}");
-      }
+      final idStatus = isMasalah ? 3 : 2;
+      final tanggal = DateTime.now().toIso8601String();
+      final jam =
+          TimeOfDay.now().format(context); // Use current time as example
+
+      final idRiwayat =
+          widget.idTugas; // Assuming you have the idTugas as id_riwayat
+
+      // Assuming you also need to fetch id_unit from the database
+      final idUnit =
+          await DBHelper.getIdUnit(); // Fetch id_unit based on your logic
+
+      // Insert or update the record in detail_riwayat_luar
+      await DBHelper.insertDetailRiwayatLuar({
+        'id_tugas': widget.idTugas,
+        'id_status': idStatus,
+        'tanggal_selesai': tanggal,
+        'jam_selesai': jam,
+        'id_anggota': namaAnggota,
+        'id_riwayat': idRiwayat,
+        'id_unit': idUnit, // Insert id_unit
+      });
+
+      // Uncomment the below block for online request when ready to use it
+      /*
+    final response = await http.put(
+      Uri.parse(rekapUrl),
+      headers: {"Content-Type": "application/json"},
+      body: body,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      widget.onConfirm();
+      if (mounted) Navigator.of(context).pop();
+    } else {
+      showError("Gagal memperbarui rekap: ${response.body}");
+    }
+    */
+
+      widget.onConfirm();
+      if (mounted) Navigator.of(context).pop();
     } catch (e) {
       showError("Terjadi kesalahan: $e");
     } finally {

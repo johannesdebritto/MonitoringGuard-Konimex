@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:monitoring_guard_frontend/service/db_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PatroliDalamLogic {
   Future<bool> submitPatroliDalam(
@@ -8,16 +11,14 @@ class PatroliDalamLogic {
     String bagian,
     String keterangan,
   ) async {
-    // Cek inputan harus terisi semua
-    if (bagian.trim().isEmpty || keterangan.trim().isEmpty) {
+    if (bagian.isEmpty || keterangan.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Bagian dan Keterangan harus diisi semua")),
+            content: Text("Bagian dan keterangan tidak boleh kosong")),
       );
       return false;
     }
 
-    // Ambil data dari shared preferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? namaAnggota = prefs.getString('anggota_terpilih');
     String? idRiwayatString = prefs.getString('id_riwayat');
@@ -25,7 +26,6 @@ class PatroliDalamLogic {
         ? int.tryParse(idRiwayatString)
         : prefs.getInt('id_riwayat');
 
-    // Validasi data penting
     if (namaAnggota == null || idRiwayat == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Anggota atau ID Riwayat belum dipilih")),
@@ -33,36 +33,60 @@ class PatroliDalamLogic {
       return false;
     }
 
-    // Format waktu
+    // ✅ Ganti format jam tanpa pakai context
     final now = DateTime.now();
     final formattedDate = now.toIso8601String().split('T')[0];
     final formattedTime =
         "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:00";
 
-    // Buat data map
     final Map<String, dynamic> data = {
       "id_riwayat": idRiwayat,
       "nama_anggota": namaAnggota,
       "id_status": 3,
-      "bagian": bagian.trim(),
-      "keterangan_masalah": keterangan.trim(),
+      "bagian": bagian,
+      "keterangan_masalah": keterangan,
       "tanggal_selesai": formattedDate,
       "jam_selesai": formattedTime,
     };
 
-    // Simpan ke database lokal
     try {
+      final url = Uri.parse(
+          '${dotenv.env['BASE_URL']}/api/tugas_dalam/submit-patroli-dalam');
+      print("🔄 Mengirim data ke server: $data");
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+
+      print("📡 Respon server statusCode: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Patroli dalam berhasil disimpan")),
+        );
+        return true;
+      } else {
+        print("❌ Gagal kirim ke server: ${response.body}");
+
+        await DBHelper.insertDetailRiwayatDalam(data);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("Gagal kirim online. Disimpan offline.")),
+        );
+        return true;
+      }
+    } catch (e) {
+      print("⚠️ Exception saat kirim data: $e");
+
       await DBHelper.insertDetailRiwayatDalam(data);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Patroli dalam berhasil disimpan lokal")),
+        const SnackBar(content: Text("Offline mode: Data disimpan lokal")),
       );
       return true;
-    } catch (e) {
-      print("⚠️ Exception saat simpan data: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal menyimpan data secara lokal")),
-      );
-      return false;
     }
   }
 }

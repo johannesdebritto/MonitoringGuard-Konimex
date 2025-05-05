@@ -6,15 +6,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class NFCScannerLogic {
+  static List<Map<String, dynamic>> nfcTasks = []; // Menyimpan data NFC di sini
+
   // Ambil data tugas dari backend berdasarkan id_unit
-  static Future<List<dynamic>> fetchTugas() async {
+  static Future<void> fetchTugas() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? idUnit = prefs.getString('id_unit');
 
       if (idUnit == null) {
         print("ID Unit tidak ditemukan");
-        return [];
+        return;
       }
 
       final response = await http.get(
@@ -22,15 +24,32 @@ class NFCScannerLogic {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        List<dynamic> tugasList = jsonDecode(response.body);
+
+        // Simpan tugas yang diterima ke SharedPreferences
+        await prefs.setString('tugas_data', jsonEncode(tugasList));
+        print("Data tugas berhasil disimpan di SharedPreferences.");
+
+        // Simpan data NFC ke dalam variabel statis nfcTasks
+        nfcTasks = List<Map<String, dynamic>>.from(tugasList);
       } else {
-        print("Gagal mengambil data tugas");
-        return [];
+        print("Gagal mengambil data tugas untuk scan");
       }
     } catch (e) {
       print("Error: $e");
-      return [];
     }
+  }
+
+  // Ambil data tugas yang sudah disimpan di SharedPreferences
+  static Future<List<dynamic>> getTugasFromSharedPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? tugasData = prefs.getString('tugas_data');
+
+    if (tugasData != null) {
+      return jsonDecode(tugasData);
+    }
+
+    return []; // Kalau data tidak ada
   }
 
   // Fungsi untuk menampilkan modal NFC

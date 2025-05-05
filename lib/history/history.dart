@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:monitoring_guard_frontend/history/history_logic.dart';
 import 'history_dalam.dart';
 import 'history_luar.dart';
-import 'history_logic.dart';
 
 class HistoryPage extends StatefulWidget {
-  const HistoryPage({super.key});
+  final HistoryLogic logic; // ✅ menerima logic dari luar
+
+  const HistoryPage({super.key, required this.logic});
 
   @override
   State<HistoryPage> createState() => _HistoryPageState();
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  final HistoryLogic _logic = HistoryLogic();
+  HistoryLogic get _logic => widget.logic;
 
   @override
   void initState() {
     super.initState();
-    _logic.fetchHistory();
+    _logic.fetchAllHistory(); // ✅ panggil fetch untuk load data SQLite
   }
 
   @override
@@ -69,7 +71,15 @@ class _HistoryPageState extends State<HistoryPage> {
                 label: 'Patroli Dalam',
                 icon: Icons.security,
                 selected: state.currentType == PatrolType.dalam,
-                onTap: () => _logic.fetchHistory(type: PatrolType.dalam),
+                onTap: () {
+                  if (state.currentType != PatrolType.dalam) {
+                    if (state.groupedHistoryDalam.isNotEmpty) {
+                      _logic.setType(PatrolType.dalam);
+                    } else {
+                      _logic.fetchHistory(type: PatrolType.dalam);
+                    }
+                  }
+                },
                 color: Colors.blue.shade700,
               ),
               const SizedBox(width: 16),
@@ -77,7 +87,15 @@ class _HistoryPageState extends State<HistoryPage> {
                 label: 'Patroli Luar',
                 icon: Icons.directions_walk,
                 selected: state.currentType == PatrolType.luar,
-                onTap: () => _logic.fetchHistory(type: PatrolType.luar),
+                onTap: () {
+                  if (state.currentType != PatrolType.luar) {
+                    if (state.groupedHistoryLuar.isNotEmpty) {
+                      _logic.setType(PatrolType.luar);
+                    } else {
+                      _logic.fetchHistory(type: PatrolType.luar);
+                    }
+                  }
+                },
                 color: Colors.orange.shade700,
               ),
             ],
@@ -132,7 +150,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   void dispose() {
-    _logic.dispose();
+    // ✅ jangan dispose logic karena logic dishare dari luar
     super.dispose();
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
-import 'package:monitoring_guard_frontend/riwayatpage/daftar_riwayat_dalam_logic.dart';
+import 'package:monitoring_guard_frontend/riwayatpage/daftar_riwayat_dalam_logic.dart'; // Pastikan DBHelper sudah benar diimport
 
 class DetailRiwayatDalam extends StatefulWidget {
   const DetailRiwayatDalam({super.key});
@@ -37,10 +37,21 @@ class _DetailRiwayatDalamState extends State<DetailRiwayatDalam> {
     setState(() {
       _isLoading = true;
     });
+
     final data = await _service.fetchDetailRiwayatDalam();
+
+    // FILTER DATA KOSONG
+    final filteredData = data
+        .where((item) =>
+            (item['bagian']?.toString().trim().isNotEmpty ?? false) ||
+            (item['keterangan_masalah']?.toString().trim().isNotEmpty ??
+                false) ||
+            (item['jam_selesai']?.toString().trim().isNotEmpty ?? false))
+        .toList();
+
     if (!mounted) return;
     setState(() {
-      _riwayatList = data;
+      _riwayatList = filteredData;
       _isLoading = false;
     });
   }

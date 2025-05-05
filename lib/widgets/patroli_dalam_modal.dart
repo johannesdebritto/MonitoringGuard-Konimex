@@ -103,23 +103,27 @@ class _PatroliDalamModalState extends State<PatroliDalamModal> {
   Widget _buildActionButtons() {
     return Row(
       children: [
-        Expanded(
-          child: TextButton(
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: BorderSide(color: Colors.grey.shade400),
-              ),
-            ),
-            onPressed: () => Navigator.pop(context),
-            child: Text('Batal',
-                style: GoogleFonts.inter(
-                    color: Colors.black87,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600)),
-          ),
-        ),
+Expanded(
+  child: ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.red, // warna latar tombol
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 15),
+    ),
+    onPressed: () => Navigator.pop(context),
+    child: Text(
+      'Batal',
+      style: GoogleFonts.inter(
+        color: Colors.white, // warna teks putih
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  ),
+),
+
         const SizedBox(width: 10),
         Expanded(
           child: ElevatedButton(

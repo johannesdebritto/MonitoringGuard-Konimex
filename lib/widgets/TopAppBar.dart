@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'package:monitoring_guard_frontend/widgets/kembalimodal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:monitoring_guard_frontend/tugas_selection/home_selection.dart';
 
 class TopBarScreen extends StatefulWidget {
   final String title;
@@ -15,18 +15,28 @@ class TopBarScreen extends StatefulWidget {
 
 class _TopBarScreenState extends State<TopBarScreen> {
   void _showExitConfirmation() async {
-    // Ambil idRiwayat sebelum menampilkan modal
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? idRiwayat =
-        prefs.getString('id_riwayat'); // Ambil idRiwayat dari SharedPreferences
+    String? idRiwayat = prefs.getString('id_riwayat');
+    String? tipePatroli = prefs.getString('tipe_patroli');
+
+    debugPrint("🟡 tipe_patroli: $tipePatroli");
+
+    if (tipePatroli == "dalam") {
+      await prefs.remove('patroli_data'); // ✅ Hapus data tipe dalam
+      await prefs.remove('tipe_patroli'); // (Opsional) biar bersih sekalian
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeSelectionScreen()),
+        (route) => false,
+      );
+      return;
+    }
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return KembaliModal(
-          idRiwayat:
-              idRiwayat ?? '', // Pastikan idRiwayat ada, jika tidak kosongkan
-        );
+        return KembaliModal(idRiwayat: idRiwayat ?? '');
       },
     );
   }
@@ -45,7 +55,7 @@ class _TopBarScreenState extends State<TopBarScreen> {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: _showExitConfirmation, // Tampilkan modal saat diklik
+          onPressed: _showExitConfirmation,
           icon: SvgPicture.asset(
             'assets/berandaassets/logout.svg',
             width: 25,

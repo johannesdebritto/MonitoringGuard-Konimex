@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:google_fonts/google_fonts.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:monitoring_guard_frontend/main.dart';
@@ -19,15 +18,28 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
   @override
   void initState() {
     super.initState();
-    _loadTugas();
+    _loadTugas(); // Memanggil fungsi load tugas
   }
 
+  // Mengambil data tugas dan menyimpannya
   Future<void> _loadTugas() async {
-    final data = await NFCScannerLogic.fetchTugas();
-    setState(() {
-      tugasList = data;
-      isLoading = false;
-    });
+    // Memanggil fungsi NFCScannerLogic untuk mengambil tugas
+    final data = await NFCScannerLogic.getTugasFromSharedPreferences();
+
+    if (data.isEmpty) {
+      // Kalau tidak ada data di SharedPreferences, coba fetch dari API
+      await NFCScannerLogic.fetchTugas(); // Fetch data tugas
+      final fetchedData = await NFCScannerLogic.getTugasFromSharedPreferences();
+      setState(() {
+        tugasList = fetchedData; // Menyimpan data tugas yang sudah di-fetch
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        tugasList = data; // Menggunakan data yang sudah ada
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -55,7 +67,8 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : tugasList.isEmpty
-                      ? const Center(child: Text("Tidak ada tugas tersedia"))
+                      ? const Center(
+                          child: Text("Tidak ada tugas tersedia scan kosong"))
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: tugasList.length,
@@ -93,6 +106,7 @@ class _NFCScannerScreenState extends State<NFCScannerScreen> {
     );
   }
 
+  // Menampilkan item tugas dalam bentuk card
   Widget _buildTaskItem(Map<String, dynamic> tugas, BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),

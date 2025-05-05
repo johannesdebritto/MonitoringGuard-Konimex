@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:monitoring_guard_frontend/service/db_helper.dart';
 import 'dart:convert';
 
 enum PatrolType { dalam, luar }
@@ -44,6 +45,12 @@ class HistoryState {
 }
 
 class HistoryLogic {
+  static final HistoryLogic _instance = HistoryLogic._internal();
+  factory HistoryLogic() => _instance;
+  HistoryLogic._internal();
+
+  bool isInitialized = false;
+
   final ValueNotifier<HistoryState> stateNotifier = ValueNotifier<HistoryState>(
     HistoryState(
       isLoading: true,
@@ -52,6 +59,37 @@ class HistoryLogic {
       groupedHistoryLuar: {},
     ),
   );
+
+  void setType(PatrolType type) {
+    final current = stateNotifier.value;
+    stateNotifier.value = current.copyWith(currentType: type);
+  }
+
+  Future<void> fetchAllHistory() async {
+    if (isInitialized) return;
+
+    stateNotifier.value = stateNotifier.value.copyWith(
+      isLoading: true,
+      hasError: false,
+    );
+
+    try {
+      final dalamFuture = _fetchHistoryDalam();
+      final luarFuture = _fetchHistoryLuar();
+      await Future.wait([dalamFuture, luarFuture]);
+
+      isInitialized = true;
+      stateNotifier.value = stateNotifier.value.copyWith(
+        isLoading: false,
+      );
+    } catch (e) {
+      print('❌ Error saat fetch all: $e');
+      stateNotifier.value = stateNotifier.value.copyWith(
+        isLoading: false,
+        hasError: true,
+      );
+    }
+  }
 
   Future<void> fetchHistory({PatrolType type = PatrolType.dalam}) async {
     stateNotifier.value = stateNotifier.value.copyWith(
@@ -76,19 +114,37 @@ class HistoryLogic {
   }
 
   Future<void> _fetchHistoryDalam() async {
-    final String apiUrl =
-        '${dotenv.env['BASE_URL']}/api/history/history-patroli-dalam/rekap';
+    final String? baseUrl = dotenv.env['BASE_URL'];
+    if (baseUrl == null) {
+      print('❌ BASE_URL not found in .env');
+      return;
+    }
 
-    final response = await http.get(Uri.parse(apiUrl));
-    _handleResponse(response, isDalam: true);
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/history/history-patroli-dalam/rekap'));
+      _handleResponse(response, isDalam: true);
+    } catch (e) {
+      print('🌐 Gagal fetch dari server, ambil dari SQLite...');
+      await _fetchHistoryDalamFromSQLite();
+    }
   }
 
   Future<void> _fetchHistoryLuar() async {
-    final String apiUrl =
-        '${dotenv.env['BASE_URL']}/api/history/history-detail-luar';
+    final String? baseUrl = dotenv.env['BASE_URL'];
+    if (baseUrl == null) {
+      print('❌ BASE_URL not found in .env');
+      return;
+    }
 
-    final response = await http.get(Uri.parse(apiUrl));
-    _handleResponse(response, isDalam: false);
+    try {
+      final response =
+          await http.get(Uri.parse('$baseUrl/api/history/history-detail-luar'));
+      _handleResponse(response, isDalam: false);
+    } catch (e) {
+      print('🌐 Gagal fetch dari server, ambil dari SQLite...');
+      await _fetchHistoryLuarFromSQLite();
+    }
   }
 
   void _handleResponse(http.Response response, {required bool isDalam}) {
@@ -99,6 +155,7 @@ class HistoryLogic {
       final data = json.decode(response.body);
 
       Map<String, List<dynamic>> newGroupedHistory = {};
+
       if (isDalam) {
         if (data['success']) {
           for (var item in data['data']) {
@@ -110,13 +167,9 @@ class HistoryLogic {
           }
         }
       } else {
-        // 🔹 Menyimpan data patroli luar termasuk nama_unit
         for (var item in data) {
           String idRiwayat = item['id_riwayat'].toString();
-
-          // 🔸 Simpan nama_unit agar bisa ditampilkan di aplikasi
           item['nama_unit'] = item['nama_unit'] ?? 'Unit Tidak Diketahui';
-
           newGroupedHistory[idRiwayat] = [
             ...(newGroupedHistory[idRiwayat] ?? []),
             item
@@ -138,10 +191,9 @@ class HistoryLogic {
         isLoading: false,
         hasError: false,
         groupedHistoryLuar:
-            isDalam ? stateNotifier.value.groupedHistoryLuar : {}, // Set kosong
-        groupedHistoryDalam: !isDalam
-            ? stateNotifier.value.groupedHistoryDalam
-            : {}, // Set kosong
+            isDalam ? stateNotifier.value.groupedHistoryLuar : {},
+        groupedHistoryDalam:
+            !isDalam ? stateNotifier.value.groupedHistoryDalam : {},
       );
     } else {
       stateNotifier.value = stateNotifier.value.copyWith(
@@ -149,6 +201,38 @@ class HistoryLogic {
         hasError: true,
       );
     }
+  }
+
+  Future<void> _fetchHistoryDalamFromSQLite() async {
+    final List<Map<String, dynamic>> localData =
+        await DBHelper.getAllDetailRiwayatDalam();
+
+    Map<String, List<dynamic>> grouped = {};
+    for (var item in localData) {
+      String id = item['id_riwayat'].toString();
+      grouped[id] = [...(grouped[id] ?? []), item];
+    }
+
+    stateNotifier.value = stateNotifier.value.copyWith(
+      isLoading: false,
+      groupedHistoryDalam: grouped,
+    );
+  }
+
+  Future<void> _fetchHistoryLuarFromSQLite() async {
+    final List<Map<String, dynamic>> localData =
+        await DBHelper.getAllDetailRiwayatLuar();
+
+    Map<String, List<dynamic>> grouped = {};
+    for (var item in localData) {
+      String id = item['id_riwayat'].toString();
+      grouped[id] = [...(grouped[id] ?? []), item];
+    }
+
+    stateNotifier.value = stateNotifier.value.copyWith(
+      isLoading: false,
+      groupedHistoryLuar: grouped,
+    );
   }
 
   void dispose() {

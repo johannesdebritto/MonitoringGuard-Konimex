@@ -1,70 +1,77 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:monitoring_guard_frontend/service/db_helper.dart';
+import 'package:intl/intl.dart'; // Untuk format waktu
 
 class TugasService {
   static Future<void> submitData({
     required BuildContext context,
     required VoidCallback onSubmitSuccess,
+    required Map<String, dynamic> localData,
   }) async {
+    // Validasi: Pastikan bagian dan keterangan tidak kosong
+    if (localData['bagian'] == null || localData['bagian'].isEmpty) {
+      _showMessage(context, "🚨 Bagian tidak boleh kosong!", Colors.red);
+      return;
+    }
+    if (localData['keterangan_masalah'] == null ||
+        localData['keterangan_masalah'].isEmpty) {
+      _showMessage(
+          context, "🚨 Keterangan masalah tidak boleh kosong!", Colors.red);
+      return;
+    }
+
+    // Ambil id_riwayat dari localData
+    int? idRiwayat = localData['id_riwayat'];
+
+    if (idRiwayat == null) {
+      _showMessage(context, "🚨 ID Riwayat tidak valid!", Colors.red);
+      return;
+    }
+
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? idRiwayat = prefs.getString('id_riwayat');
+      // Ambil data dari riwayat_dalam berdasarkan id_riwayat
+      final data = await DBHelper.getRiwayatDalamById(idRiwayat);
 
-      if (idRiwayat == null || idRiwayat.isEmpty) {
-        _showMessage(context, "🚨 ID Riwayat tidak ditemukan!", Colors.red);
-        return;
-      }
+      // Debugging: Menampilkan data yang diambil
+      print("Data dari DBHelper: $data");
 
-      String? baseUrl = dotenv.env['BASE_URL'];
-      if (baseUrl == null || baseUrl.isEmpty) {
-        _showMessage(
-            context, "🚨 BASE_URL tidak ditemukan di .env!", Colors.red);
-        return;
-      }
+      if (data.isNotEmpty) {
+        // Cek jika id_status_dalam atau waktu_selesai_dalam kosong
+        if (data['id_status_dalam'] == null ||
+            data['id_status_dalam'].toString().isEmpty ||
+            data['waktu_selesai_dalam'] == null ||
+            data['waktu_selesai_dalam'].toString().isEmpty) {
+          Map<String, dynamic> updatedData = {
+            'id_status_dalam': localData['id_status_dalam'] ??
+                "completed", // Default jika kosong
+            'waktu_selesai_dalam': localData['waktu_selesai_dalam'] ??
+                DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()),
+          };
 
-      final url = Uri.parse('$baseUrl/api/tugas_dalam/update-status-dalam');
+          print("Updating riwayat_dalam with data: $updatedData");
 
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: json.encode({"id_riwayat": idRiwayat}),
-      );
-
-      if (response.statusCode != 200) {
-        _showMessage(
-          context,
-          "❌ Gagal submit tugas! Status: ${response.statusCode}",
-          Colors.red,
-        );
-        return;
-      }
-
-      final Map<String, dynamic> jsonResponse = json.decode(response.body);
-
-      if (jsonResponse['success'] == true) {
-        await prefs.setBool(
-            'is_submitted_dalam', true); // ✅ Menyimpan status submit
-        _showMessage(context, "✅ Tugas berhasil disubmit!", Colors.green);
-
-        if (context.mounted) {
-          // Tutup modal dan jalankan callback setelahnya
-          Navigator.pop(context, true);
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (context.mounted) onSubmitSuccess();
-          });
+          // Update data di riwayat_dalam
+          await DBHelper.updateRiwayatDalam(idRiwayat, updatedData);
+          _showMessage(context, "✅ Tugas berhasil diperbarui!", Colors.green);
+        } else {
+          _showMessage(context, "⚠️ Data sudah lengkap, tidak perlu diupdate.",
+              Colors.orange);
         }
       } else {
-        _showMessage(
-          context,
-          "❌ ${jsonResponse['message'] ?? 'Gagal submit tugas!'}",
-          Colors.red,
-        );
+        _showMessage(context, "🚨 Data tidak ditemukan.", Colors.red);
+        print("❌ Data tidak ditemukan.");
+      }
+
+      // Tetap jalankan alur sukses
+      if (context.mounted) {
+        Navigator.pop(context, true);
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (context.mounted) onSubmitSuccess();
+        });
       }
     } catch (e) {
-      _showMessage(context, "🚨 Terjadi kesalahan: $e", Colors.red);
+      _showMessage(context, "⚠️ Gagal menyimpan data", Colors.red);
+      print("❌ Error saat menyimpan data: $e");
     }
   }
 

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:monitoring_guard_frontend/service/db_helper.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:monitoring_guard_frontend/riwayatpage/daftar_riwayat_luar_logic.dart';
 import 'package:monitoring_guard_frontend/widgets/modal_submit_luar.dart';
 
@@ -21,7 +22,17 @@ class KontenBerandaLogic {
     _saveBool('isSubmittedDalam', value);
   }
 
+  Future<bool> _isOnline() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    return connectivityResult != ConnectivityResult.none;
+  }
+
   Future<int> fetchJumlahMasalah(String idRiwayat) async {
+    if (!await _isOnline()) {
+      debugPrint('📴 Offline: fetchJumlahMasalah skip HTTP');
+      return 0;
+    }
+
     try {
       final url = Uri.parse(
           '${dotenv.env['BASE_URL']}/api/tugas_dalam/patroli-dalam/jumlah/$idRiwayat');
@@ -45,7 +56,11 @@ class KontenBerandaLogic {
     _isSubmittedDalam = prefs.getBool('isSubmittedDalam') ?? false;
     final idRiwayat = prefs.getString('id_riwayat');
     if (idRiwayat != null) {
-      _jumlahMasalah = await fetchJumlahMasalah(idRiwayat);
+      // Ambil data detail riwayat dalam berdasarkan ID
+      final riwayatDetail =
+          await DBHelper.getDetailRiwayatDalamById(int.parse(idRiwayat));
+      // Menghitung jumlah masalah berdasarkan jumlah data yang ditemukan
+      _jumlahMasalah = riwayatDetail.length;
     } else {
       debugPrint("🚨 ID Riwayat tidak ditemukan, coba login ulang?");
     }
@@ -57,6 +72,11 @@ class KontenBerandaLogic {
   }
 
   Future<void> fetchStatus() async {
+    if (!await _isOnline()) {
+      debugPrint("📴 Offline: fetchStatus skip HTTP");
+      return;
+    }
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final idUnit = prefs.getString('id_unit');
@@ -80,8 +100,16 @@ class KontenBerandaLogic {
 
   Future<void> submitTugas(BuildContext context,
       {bool showSnackbar = false, bool refreshRiwayat = true}) async {
+    if (!await _isOnline()) {
+      debugPrint("📴 Offline: submitTugas skip HTTP");
+      if (showSnackbar)
+        _showSnackbar(context, "📴 Tidak ada koneksi internet!");
+      return;
+    }
+
     try {
       final prefs = await SharedPreferences.getInstance();
+
       final idRiwayat = prefs.getString('id_riwayat') ?? '';
       if (idRiwayat.isEmpty) {
         if (showSnackbar) _showSnackbar(context, "🚨 ID Riwayat kosong!");
@@ -95,7 +123,6 @@ class KontenBerandaLogic {
       );
 
       if (response.statusCode == 400) {
-        // Jika tugas belum selesai, tampilkan modal
         showDialog(context: context, builder: (_) => const ModalSubmitScreen());
         return;
       }

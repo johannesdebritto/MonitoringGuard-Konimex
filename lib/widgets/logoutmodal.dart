@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LogoutModal extends StatefulWidget {
   final VoidCallback onLogout; // Callback untuk logout
@@ -51,8 +52,10 @@ class _LogoutModalState extends State<LogoutModal> {
                   ),
                   // Tombol Ya (Merah)
                   TextButton(
-                    onPressed: () {
-                      widget.onLogout(); // Proses logout
+                    onPressed: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.clear(); // Hapus semua data lokal
+                      widget.onLogout(); // Panggil fungsi logout
                     },
                     child: Text(
                       "Ya",

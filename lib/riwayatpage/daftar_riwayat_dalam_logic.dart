@@ -1,6 +1,4 @@
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:monitoring_guard_frontend/service/db_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DetailRiwayatDalamService {
@@ -24,29 +22,40 @@ class DetailRiwayatDalamService {
         return [];
       }
 
-      print("🔄 Fetch riwayat dengan ID: $idRiwayat...");
+      print(
+          "🔄 Mengambil data riwayat dalam dari penyimpanan lokal dengan ID: $idRiwayat...");
 
-      final url = Uri.parse(
-          '${dotenv.env['BASE_URL']}/api/tugas_dalam/patroli-dalam/$idRiwayat');
-      final response = await http.get(url);
+      // Mengambil data dari database lokal (SQLite)
+      final riwayatDetail =
+          await DBHelper.getDetailRiwayatDalamById(int.parse(idRiwayat));
 
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        if (jsonResponse is Map<String, dynamic> &&
-            jsonResponse.containsKey('data')) {
-          print("✅ Data berhasil di-fetch: ${jsonResponse['data']}");
-          return List<dynamic>.from(jsonResponse['data']);
-        } else {
-          print("❌ Format data tidak sesuai");
-          return [];
-        }
-      } else {
-        print(
-            "❌ Gagal fetch riwayat, status code: ${response.statusCode}, response: ${response.body}");
+      if (riwayatDetail.isEmpty) {
+        print("❌ Data riwayat tidak ditemukan di penyimpanan lokal.");
         return [];
       }
+
+      print("✅ Data riwayat berhasil diambil dari penyimpanan lokal.");
+
+      // ⛔ Filter: Hapus data yang kosong
+      return riwayatDetail
+          .where((item) =>
+              (item['bagian']?.toString().trim().isNotEmpty ?? false) ||
+              (item['keterangan_masalah']?.toString().trim().isNotEmpty ??
+                  false))
+          .map((item) {
+        return {
+          'id_rekap': item['id_rekap'],
+          'nama_anggota': item['nama_anggota'],
+          'id_status': item['id_status'],
+          'bagian': item['bagian'],
+          'keterangan_masalah': item['keterangan_masalah'],
+          'tanggal_selesai': item['tanggal_selesai'],
+          'jam_selesai': item['jam_selesai'],
+          'id_riwayat': item['id_riwayat'],
+        };
+      }).toList();
     } catch (e) {
-      print("❌ Error saat fetch riwayat: $e");
+      print("❌ Error saat mengambil data riwayat dalam: $e");
       return [];
     }
   }

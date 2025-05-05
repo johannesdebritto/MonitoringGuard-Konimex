@@ -14,45 +14,50 @@ class KembaliModal extends StatefulWidget {
 }
 
 class _KembaliModalState extends State<KembaliModal> {
-  bool isLoading = true; // Ini untuk loading spinner
-  bool semuaSelesai = false; // Ini untuk cek apakah semua tugas selesai
+  bool isLoading = true;
+  bool bolehKeluar = false;
 
   @override
   void initState() {
     super.initState();
-    cekTugasSelesai(); // Mulai cek tugas selesai saat modal muncul
+    cekTugasSelesai();
   }
 
   Future<void> cekTugasSelesai() async {
     final url = Uri.parse(
-        '${dotenv.env['BASE_URL']}/api/tugas/cek-selesai-luar/${widget.idRiwayat}'); // Akses API dengan idRiwayat
+        '${dotenv.env['BASE_URL']}/api/tugas/cek-selesai-luar/${widget.idRiwayat}');
 
     try {
-      final response =
-          await http.get(url); // Panggil API untuk cek status tugas
+      final response = await http.get(url);
       print("📡 API Cek Tugas Response: ${response.statusCode}");
 
       if (response.statusCode == 200) {
-        var data = json.decode(response.body); // Ambil data response
+        var data = json.decode(response.body);
+        print("📥 Response JSON: $data");
+
+        int total = data['totalTugas'] ?? 0;
+        int selesai = data['tugasSelesai'] ?? 0;
+
+        print("📊 totalTugas: $total, tugasSelesai: $selesai");
+
+        // Logika utama: boleh keluar jika selesai == 0 atau selesai == total
         setState(() {
-          semuaSelesai = data['semuaSelesai']; // Set hasil ke state
+          bolehKeluar = (selesai == 0 || selesai == total);
         });
       }
     } catch (e) {
       print("❌ Error cek tugas: $e");
     } finally {
       setState(() {
-        isLoading = false; // Setelah fetch selesai, loading dimatikan
+        isLoading = false;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Saat loading, tampilkan full screen loading
     if (isLoading) {
-      return Center(
-          child: CircularProgressIndicator()); // Menampilkan loading di tengah
+      return const Center(child: CircularProgressIndicator());
     }
 
     return Center(
@@ -68,7 +73,7 @@ class _KembaliModalState extends State<KembaliModal> {
               ),
               const SizedBox(height: 20),
               Text(
-                semuaSelesai
+                bolehKeluar
                     ? "Apakah Anda yakin ingin kembali ke halaman utama?"
                     : "Tidak bisa kembali! Masih ada tugas yang belum selesai.",
                 style: GoogleFonts.inter(),
@@ -79,21 +84,20 @@ class _KembaliModalState extends State<KembaliModal> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context), // Tombol Batal
+                    onPressed: () => Navigator.pop(context),
                     child: Text("Batal",
                         style: GoogleFonts.inter(color: Colors.white)),
                     style: TextButton.styleFrom(backgroundColor: Colors.red),
                   ),
-                  if (semuaSelesai)
+                  if (bolehKeluar)
                     TextButton(
                       onPressed: () {
-                        // Setelah klik "Ya", menuju ke HomeSelectionScreen
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
                               builder: (context) =>
                                   const HomeSelectionScreen()),
-                          (route) => false, // Hapus semua halaman sebelumnya
+                          (route) => false,
                         );
                       },
                       child: Text("Ya",

@@ -108,7 +108,7 @@ class _TugasDalamScreenState extends State<TugasDalamScreen> {
             ),
           ),
           Positioned.fill(
-            top: 75,
+            top: 100,
             bottom: 48,
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())

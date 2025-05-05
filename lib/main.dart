@@ -8,9 +8,23 @@ import 'package:monitoring_guard_frontend/widgets/BottomNavbar.dart';
 import 'package:monitoring_guard_frontend/widgets/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// 🔧 Tambahkan untuk SQLite offline
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+// ✅ Tambahkan untuk inisialisasi locale DateFormat
+import 'package:intl/date_symbol_data_local.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ✅ Inisialisasi SQLite untuk offline
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
+  // ✅ Inisialisasi locale 'id_ID' untuk DateFormat
+  await initializeDateFormatting('id_ID', null);
+
+  // ✅ Load .env file
   try {
     await dotenv.load();
     print("✅ .env berhasil dimuat: ${dotenv.env}");
@@ -20,6 +34,7 @@ void main() async {
 
   print("📌 BASE_URL yang dimuat: ${dotenv.env['BASE_URL']}");
 
+  // ✅ Atur GoogleFonts caching
   final prefs = await SharedPreferences.getInstance();
   bool? isFontDownloaded = prefs.getBool('isFontDownloaded');
 
@@ -56,19 +71,19 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
-  late List<Widget>
-      _pages; // Menggunakan 'late' agar bisa diinisialisasi di initState()
+  late List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
 
-    // Buat daftar halaman berdasarkan tipePatroli
+    // ✅ Log saat MainNavigation berhasil dibuka
+    print("📲 MainNavigation dibuka dengan tipePatroli: ${widget.tipePatroli}");
+
     _pages = [
-      BerandaScreen(tipePatroli: widget.tipePatroli), // Beranda tetap ada
-      if (widget.tipePatroli == "luar")
-        NFCScannerScreen(), // Scanner hanya untuk "luar"
-      RiwayatScreen(tipePatroli: widget.tipePatroli), // Riwayat tetap ada
+      BerandaScreen(tipePatroli: widget.tipePatroli),
+      if (widget.tipePatroli == "luar") NFCScannerScreen(),
+      RiwayatScreen(tipePatroli: widget.tipePatroli),
     ];
   }
 
@@ -83,7 +98,7 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       body: Stack(
         children: [
-          _pages[_selectedIndex], // Konten utama
+          _pages[_selectedIndex],
           Positioned(
             left: 0,
             right: 0,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:monitoring_guard_frontend/widgets/custom_modal.dart';
 import 'tugas_screen_logic.dart';
@@ -15,65 +15,97 @@ class _TugasScreenState extends State<TugasScreen> {
   final TugasScreenLogic _logic = TugasScreenLogic();
   List tugasList = [];
   String namaAnggota = "";
-  Map<String, int> statusCache = {}; // Cache status tugas per id_tugas
+  final Map<String, int> statusCache = {};
+  bool _isFirstLoad = true;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isFirstLoad) {
+      _isFirstLoad = false;
+      _loadData();
+    }
   }
 
   Future<void> _loadData() async {
-    try {
-      namaAnggota = await _logic.loadUserData();
-      tugasList = await _logic.fetchTugas();
+    namaAnggota = await _logic.loadUserData();
 
-      await _cekStatusSemuaTugas(); // Fetch status setelah dapat daftar tugas
-      setState(() {}); // Update UI setelah semua selesai
-    } catch (e) {
-      print("❌ Error saat memuat data: $e");
-    }
+    // ✅ Ambil data dari backend atau lokal via logic
+    await _logic.fetchTugas();
+
+    setState(() {
+      tugasList = _logic.tugasList;
+    });
+
+    print("📦 Data tugasList di TugasScreen: $tugasList");
+
+    // ✅ Cek ulang status semua tugas
+    await _cekStatusSemuaTugas();
+
+    if (mounted) setState(() {});
   }
 
   Future<void> _cekStatusSemuaTugas() async {
     if (tugasList.isEmpty) return;
 
-    await Future.wait(tugasList.map((tugas) async {
-      String idTugas = tugas['id_tugas'].toString();
-      int? status = await _logic.cekStatusTugas(idTugas);
-      if (status != null) {
-        setState(() {
+    await Future.wait(
+      tugasList.map((tugas) async {
+        String idTugas = tugas['id_tugas'].toString();
+        int? status = await _logic.cekStatusTugas(idTugas, force: true);
+        if (status != null) {
           statusCache[idTugas] = status;
-        });
-      }
-    }));
+        }
+      }),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-        itemCount: tugasList.length,
-        itemBuilder: (context, index) => buildTaskItem(tugasList[index]),
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: tugasList.isEmpty
+            ? ListView(
+                children: const [
+                  Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text("Belum ada tugas."),
+                    ),
+                  ),
+                ],
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                itemCount: tugasList.length,
+                itemBuilder: (context, index) =>
+                    _buildTaskItem(tugasList[index]),
+              ),
       ),
     );
   }
 
-  Widget buildTaskItem(Map tugas) {
-    String title = tugas['nama_tugas'];
-    String idTugas = tugas['id_tugas'].toString();
-    String idRiwayat = tugas['id_riwayat'].toString();
-    int? status = statusCache[idTugas];
+  Widget _buildTaskItem(Map tugas) {
+    final idTugas = tugas['id_tugas'].toString();
+    final idRiwayat = tugas['id_riwayat'].toString();
+    final title = tugas['nama_tugas'] ?? 'Tugas';
 
-    final Map<int, Map<String, dynamic>> statusData = {
+    final status = statusCache[idTugas];
+    final statusData = {
       0: {'text': 'Belum Selesai', 'color': const Color(0xFFFCA311)},
       2: {'text': 'Selesai', 'color': Colors.green.shade400},
       3: {'text': 'Ada Masalah', 'color': Colors.red.shade400},
     };
 
-    final statusText = statusData[status]?['text'] ?? 'Belum Selesai';
-    final statusColor = statusData[status]?['color'] ?? const Color(0xFFFCA311);
+    final statusText =
+        statusData[status]?['text'] as String? ?? 'Belum Selesai';
+    final statusColor =
+        statusData[status]?['color'] as Color? ?? const Color(0xFFFCA311);
 
     return Row(
       children: [
@@ -93,7 +125,7 @@ class _TugasScreenState extends State<TugasScreen> {
               side: BorderSide(color: Colors.blue.shade900),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
                   Expanded(
@@ -112,7 +144,7 @@ class _TugasScreenState extends State<TugasScreen> {
                         Row(
                           children: [
                             Text(
-                              "Status: ",
+                              "Status Tugas: ",
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -158,26 +190,30 @@ class _TugasScreenState extends State<TugasScreen> {
                         child: IconButton(
                           onPressed: () async {
                             try {
-                              await _logic.fetchRekap(idTugas);
-                              if (context.mounted) {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => CustomModalWidgets(
-                                    namaTugas: title,
-                                    namaAnggota: namaAnggota,
-                                    idTugas: idTugas,
-                                    idRiwayat: idRiwayat,
-                                  ),
-                                );
+                              final data = await _logic.fetchRekap(idTugas);
+                              if (data != null && data.isNotEmpty) {
+                                final idStatus = data['id_status'];
+                                statusCache[idTugas] = idStatus;
+                                setState(() {});
                               }
+
+                              if (!mounted) return;
+                              showDialog(
+                                context: context,
+                                builder: (_) => CustomModalWidgets(
+                                  namaTugas: title,
+                                  namaAnggota: namaAnggota,
+                                  idTugas: idTugas,
+                                  idRiwayat: idRiwayat,
+                                ),
+                              );
                             } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Gagal memuat data: $e'),
-                                  ),
-                                );
-                              }
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal memuat data: $e'),
+                                ),
+                              );
                             }
                           },
                           icon: SvgPicture.asset(
@@ -188,7 +224,7 @@ class _TugasScreenState extends State<TugasScreen> {
                         ),
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
@@ -196,5 +232,12 @@ class _TugasScreenState extends State<TugasScreen> {
         ),
       ],
     );
+  }
+
+  // Untuk dipanggil dari luar (misalnya dari KontenBeranda)
+  void setInitialData({required List tugas, required String nama}) {
+    tugasList = tugas;
+    namaAnggota = nama;
+    _cekStatusSemuaTugas();
   }
 }

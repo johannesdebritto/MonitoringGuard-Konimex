@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
+// import 'package:http/http.dart' as http;
 import 'package:monitoring_guard_frontend/service/db_helper.dart';
-import 'dart:convert';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_dalam_helper.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_luar_helper.dart';
+// import 'dart:convert';
 
 enum PatrolType { dalam, luar }
 
@@ -74,9 +76,11 @@ class HistoryLogic {
     );
 
     try {
-      final dalamFuture = _fetchHistoryDalam();
-      final luarFuture = _fetchHistoryLuar();
-      await Future.wait([dalamFuture, luarFuture]);
+      // await _fetchHistoryDalam();
+      // await _fetchHistoryLuar();
+
+      await _fetchHistoryDalamFromSQLite();
+      await _fetchHistoryLuarFromSQLite();
 
       isInitialized = true;
       stateNotifier.value = stateNotifier.value.copyWith(
@@ -99,10 +103,16 @@ class HistoryLogic {
     );
 
     try {
+      // if (type == PatrolType.dalam) {
+      //   await _fetchHistoryDalam();
+      // } else {
+      //   await _fetchHistoryLuar();
+      // }
+
       if (type == PatrolType.dalam) {
-        await _fetchHistoryDalam();
+        await _fetchHistoryDalamFromSQLite();
       } else {
-        await _fetchHistoryLuar();
+        await _fetchHistoryLuarFromSQLite();
       }
     } catch (e) {
       print('❌ Error: $e');
@@ -113,6 +123,8 @@ class HistoryLogic {
     }
   }
 
+  // ❌ Seluruh fungsi API dimatikan
+  /*
   Future<void> _fetchHistoryDalam() async {
     final String? baseUrl = dotenv.env['BASE_URL'];
     if (baseUrl == null) {
@@ -121,8 +133,7 @@ class HistoryLogic {
     }
 
     try {
-      final response = await http
-          .get(Uri.parse('$baseUrl/api/history/history-patroli-dalam/rekap'));
+      final response = await http.get(Uri.parse('$baseUrl/api/history/history-patroli-dalam/rekap'));
       _handleResponse(response, isDalam: true);
     } catch (e) {
       print('🌐 Gagal fetch dari server, ambil dari SQLite...');
@@ -138,8 +149,7 @@ class HistoryLogic {
     }
 
     try {
-      final response =
-          await http.get(Uri.parse('$baseUrl/api/history/history-detail-luar'));
+      final response = await http.get(Uri.parse('$baseUrl/api/history/history-detail-luar'));
       _handleResponse(response, isDalam: false);
     } catch (e) {
       print('🌐 Gagal fetch dari server, ambil dari SQLite...');
@@ -202,10 +212,11 @@ class HistoryLogic {
       );
     }
   }
+  */
 
   Future<void> _fetchHistoryDalamFromSQLite() async {
     final List<Map<String, dynamic>> localData =
-        await DBHelper.getAllDetailRiwayatDalam();
+        await DetailRiwayatDalamHelper.getAllDetailRiwayatDalam();
 
     Map<String, List<dynamic>> grouped = {};
     for (var item in localData) {
@@ -221,7 +232,7 @@ class HistoryLogic {
 
   Future<void> _fetchHistoryLuarFromSQLite() async {
     final List<Map<String, dynamic>> localData =
-        await DBHelper.getAllDetailRiwayatLuar();
+        await DetailRiwayatLuarHelper.getAllDetailRiwayatLuar();
 
     Map<String, List<dynamic>> grouped = {};
     for (var item in localData) {

@@ -1,13 +1,12 @@
 import 'dart:ui';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+
 import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_luar_helper.dart';
 
 class CustomModalLogic {
   final String idTugas;
-  String idRiwayat = ""; // Ambil dari SharedPreferences nanti
+  String idRiwayat = ""; // Ambil dari database, bukan SharedPreferences
 
   String status = "Belum Selesai";
   String tanggalSelesai = '--';
@@ -20,14 +19,23 @@ class CustomModalLogic {
 
   Future<void> fetchRekapData() async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      idRiwayat = prefs.getString('id_riwayat') ?? "";
-
-      if (idRiwayat.isEmpty) {
-        print("🚨 ID Riwayat tidak ditemukan di SharedPreferences!");
+      // Ambil status dan ID Riwayat dari DBHelper
+      final idStatus =
+          await DetailRiwayatLuarHelper.getStatusFromLatestRiwayat(idTugas);
+      if (idStatus == null || idStatus == 0) {
+        print("🚨 Status tidak ditemukan atau ID Status kosong");
         return;
       }
 
+      // Ambil data rekap dari DB
+      final data = await DetailRiwayatLuarHelper.getRiwayatDetails(
+          idTugas); // Sesuaikan dengan method baru
+      if (data == null) {
+        print("⚠️ Data rekap tidak ditemukan");
+        return;
+      }
+      // Mengomentari kode API karena tidak digunakan
+      /*
       final url = Uri.parse(
           '${dotenv.env['BASE_URL']}/api/tugas/rekap/$idTugas/$idRiwayat');
       print("🔍 Fetching: $url");
@@ -60,6 +68,31 @@ class CustomModalLogic {
       } else {
         print(
             "ℹ️ Tidak ada tugas yang ditemukan (status: ${response.statusCode}).");
+      }
+      */
+      // Cek status berdasarkan ID yang diambil dari DB
+      if (idStatus == 2) {
+        status = "Selesai";
+        tanggalSelesai = _formatTanggal(data['tanggal_selesai']);
+        jamSelesai = _formatJam(data['jam_selesai']);
+        print("✅ Status: $status");
+      } else if (idStatus == 1) {
+        status = "Belum Selesai";
+        print("🕒 Status: $status");
+      } else if (data['keterangan_masalah'] != null &&
+          data['keterangan_masalah'].toString().isNotEmpty) {
+        status = "Ada Masalah";
+        tanggalGagal = _formatTanggal(data['tanggal_gagal']);
+        jamGagal = _formatJam(data['jam_gagal']);
+        masalahList = [data['keterangan_masalah'] ?? ''];
+
+        print("❗ Status: $status");
+        print("📅 Tanggal Gagal: $tanggalGagal");
+        print("⏰ Jam Gagal: $jamGagal");
+        print("📝 Masalah: $masalahList");
+      } else {
+        status = "Ada Masalah";
+        print("⚠️ Status default masalah");
       }
     } catch (e) {
       print("❌ ERROR fetching rekap data: $e");

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:monitoring_guard_frontend/service/db_helper.dart';
-import 'package:intl/intl.dart'; // Untuk format waktu
+
+import 'package:intl/intl.dart';
+import 'package:monitoring_guard_frontend/service/riwayat_dalam_helper.dart'; // Untuk format waktu
 
 class TugasService {
   static Future<void> submitData({
@@ -30,7 +31,7 @@ class TugasService {
 
     try {
       // Ambil data dari riwayat_dalam berdasarkan id_riwayat
-      final data = await DBHelper.getRiwayatDalamById(idRiwayat);
+      final data = await RiwayatDalamHelper.getRiwayatDalamById(idRiwayat);
 
       // Debugging: Menampilkan data yang diambil
       print("Data dari DBHelper: $data");
@@ -51,7 +52,7 @@ class TugasService {
           print("Updating riwayat_dalam with data: $updatedData");
 
           // Update data di riwayat_dalam
-          await DBHelper.updateRiwayatDalam(idRiwayat, updatedData);
+          await RiwayatDalamHelper.updateRiwayatDalam(idRiwayat, updatedData);
           _showMessage(context, "✅ Tugas berhasil diperbarui!", Colors.green);
         } else {
           _showMessage(context, "⚠️ Data sudah lengkap, tidak perlu diupdate.",

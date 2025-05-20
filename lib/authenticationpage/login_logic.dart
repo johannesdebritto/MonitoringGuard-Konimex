@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:monitoring_guard_frontend/authenticationpage/warning_modal.dart';
 import 'package:monitoring_guard_frontend/history/history_logic.dart';
 import 'package:monitoring_guard_frontend/service/db_helper.dart';
+import 'package:monitoring_guard_frontend/service/init_db.dart';
+import 'package:monitoring_guard_frontend/service/tugas_unit_helper.dart';
 import 'package:monitoring_guard_frontend/tugas_selection/home_selection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:monitoring_guard_frontend/berandapage/tugas_screen_logic.dart';
@@ -131,7 +133,7 @@ class LoginLogic {
   }
 
   Future<String> _generatePatrolId() async {
-    final db = await DBHelper.initDb();
+    final db = await InitDb.getDatabase();
 
     // Cek apakah ada data di tabel riwayat_dalam
     final result =
@@ -177,7 +179,7 @@ class LoginLogic {
             // Pastikan id_unit ada
             print("🟠 [LOGIN] Saving task: ${tugas['nama_tugas']}");
             try {
-              await DBHelper.insertTugasUnit({
+              await TugasUnitHelper.insertTugasUnit({
                 'id_unit': tugas['id_unit'],
                 'nama_tugas': tugas['nama_tugas'],
                 'id_status': tugas['id_status'] ?? 1,

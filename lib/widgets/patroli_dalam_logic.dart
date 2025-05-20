@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:monitoring_guard_frontend/service/db_helper.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_dalam_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PatroliDalamLogic {
@@ -52,7 +53,7 @@ class PatroliDalamLogic {
 
     // Simpan ke database lokal
     try {
-      await DBHelper.insertDetailRiwayatDalam(data);
+      await DetailRiwayatDalamHelper.insertDetailRiwayatDalam(data);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Patroli dalam berhasil disimpan lokal")),
       );

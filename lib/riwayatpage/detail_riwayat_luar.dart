@@ -51,12 +51,17 @@ class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: widget.riwayatItem.map((item) {
+                  // Ambil id_status dari item, default 0 kalau null
+                  final int idStatus =
+                      int.tryParse(item['id_status']?.toString() ?? '') ?? 0;
+                  final String status = statusText(idStatus);
+
                   return _buildActivityCard(
                     item['nama_tugas'] ?? 'Tidak ada nama tugas',
-                    item['tanggal_selesai'] ?? '', // Pastikan ini benar
-                    item['jam_selesai'] ?? '', // Jam selesai sesuai data
+                    item['tanggal_selesai'] ?? '',
+                    item['jam_selesai'] ?? '',
                     item['keterangan_masalah'] ?? '--',
-                    item['nama_status'] ?? 'Tidak diketahui',
+                    status,
                   );
                 }).toList(),
               ),
@@ -178,7 +183,7 @@ class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
     switch (status.toLowerCase()) {
       case "selesai":
         return Colors.green;
-      case "gagal":
+      case "ada masalah":
         return Colors.red;
       default:
         return Colors.orange;
@@ -189,10 +194,21 @@ class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
     switch (status.toLowerCase()) {
       case "selesai":
         return const Icon(Icons.check_circle, color: Colors.green);
-      case "gagal":
+      case "ada masalah":
         return const Icon(Icons.cancel, color: Colors.red);
       default:
         return const Icon(Icons.hourglass_empty, color: Colors.orange);
+    }
+  }
+
+  String statusText(int idStatus) {
+    switch (idStatus) {
+      case 2:
+        return 'Selesai';
+      case 3:
+        return 'Ada Masalah';
+      default:
+        return 'Belum Selesai';
     }
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:monitoring_guard_frontend/service/db_helper.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_luar_helper.dart';
 
 class KontenRiwayatLogic {
   final Map<String, dynamic> item;
@@ -32,37 +34,47 @@ class KontenRiwayatLogic {
   Future<void> fetchDetailRiwayat(int idUnit, int idRiwayat) async {
     try {
       print(
-          "🔵 [DEBUG] Mengambil data dari API untuk id_unit: $idUnit dan id_riwayat: $idRiwayat");
+          "📦 [OFFLINE] Mengambil data dari database lokal untuk id_unit: $idUnit dan id_riwayat: $idRiwayat");
 
-      final url = Uri.parse(
-          '${dotenv.env['BASE_URL']}/api/tugas/detail_riwayat/$idUnit/$idRiwayat');
-      print("🌐 [DEBUG] Request ke API: $url");
+      final data = await DetailRiwayatLuarHelper.getDetailRiwayatLuarOffline(
+          idUnit, idRiwayat);
+      detailRiwayat = data;
 
-      final response = await http.get(url);
-      print("🟣 [DEBUG] Status Code Response: ${response.statusCode}");
+      print("✅ [SUCCESS] Data offline berhasil diambil: $detailRiwayat");
 
-      if (response.statusCode == 200) {
-        final body = utf8.decode(response.bodyBytes);
-        final decoded = jsonDecode(body);
+      // Jika kamu ingin kembali ke versi online, hapus komentar ini:
+      /*
+    print("🔵 [DEBUG] Mengambil data dari API untuk id_unit: $idUnit dan id_riwayat: $idRiwayat");
 
-        if (decoded is List<dynamic>) {
-          detailRiwayat = decoded;
-          print("✅ [SUCCESS] Data detail_riwayat diterima: $decoded");
-        } else {
-          print("⚠️ [WARNING] Response tidak berbentuk List! Cek format JSON.");
-          detailRiwayat = [];
-        }
-      } else if (response.statusCode == 404) {
-        print("📭 [INFO] Tidak ada riwayat, menampilkan pesan.");
-        detailRiwayat = [];
+    final url = Uri.parse(
+        '${dotenv.env['BASE_URL']}/api/tugas/detail_riwayat/$idUnit/$idRiwayat');
+    print("🌐 [DEBUG] Request ke API: $url");
+
+    final response = await http.get(url);
+    print("🟣 [DEBUG] Status Code Response: ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      final body = utf8.decode(response.bodyBytes);
+      final decoded = jsonDecode(body);
+
+      if (decoded is List<dynamic>) {
+        detailRiwayat = decoded;
+        print("✅ [SUCCESS] Data detail_riwayat diterima: $decoded");
       } else {
-        print(
-            "❌ [ERROR] Gagal mengambil data. Status code: ${response.statusCode}");
-        print("❗ [DEBUG] Response body: ${response.body}");
+        print("⚠️ [WARNING] Response tidak berbentuk List! Cek format JSON.");
         detailRiwayat = [];
       }
+    } else if (response.statusCode == 404) {
+      print("📭 [INFO] Tidak ada riwayat, menampilkan pesan.");
+      detailRiwayat = [];
+    } else {
+      print("❌ [ERROR] Gagal mengambil data. Status code: ${response.statusCode}");
+      print("❗ [DEBUG] Response body: ${response.body}");
+      detailRiwayat = [];
+    }
+    */
     } catch (e) {
-      print("🔥 [EXCEPTION] Error saat mengambil data: $e");
+      print("🔥 [EXCEPTION] Error saat mengambil data dari SQLite: $e");
       detailRiwayat = [];
     } finally {
       isLoading = false;

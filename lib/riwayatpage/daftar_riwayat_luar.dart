@@ -19,7 +19,7 @@ class KontenRiwayatScreen extends StatefulWidget {
 }
 
 class _KontenRiwayatScreenState extends State<KontenRiwayatScreen> {
-  KontenRiwayatLogic? logic; // Nullable biar nggak error
+  KontenRiwayatLogic? logic;
 
   @override
   void initState() {
@@ -36,8 +36,7 @@ class _KontenRiwayatScreenState extends State<KontenRiwayatScreen> {
   @override
   Widget build(BuildContext context) {
     if (logic == null) {
-      return const Center(
-          child: CircularProgressIndicator()); // Hindari error sebelum init
+      return const Center(child: CircularProgressIndicator());
     }
 
     return Card(
@@ -56,26 +55,32 @@ class _KontenRiwayatScreenState extends State<KontenRiwayatScreen> {
                   Text(
                     "Pengecekan ${widget.namaUnit}",
                     style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade900),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade900,
+                    ),
                   ),
-                  Divider(thickness: 1, height: 12),
+                  const Divider(thickness: 1, height: 12),
                   _buildTextRow("Hari", widget.item['hari']),
                   _buildTextRow("Tanggal", widget.item['tanggal']),
-                  _buildTextRow("Waktu Mulai",
-                      _formatWaktu(widget.item['waktu_mulai_luar'])),
-                  _buildTextRow("Waktu Selesai",
-                      _formatWaktu(widget.item['waktu_selesai_luar'])),
+                  _buildTextRow(
+                      "Waktu Mulai",
+                      _formatWaktu(
+                          widget.item['waktu_mulai_luar']?.toString())),
+                  _buildTextRow(
+                      "Waktu Selesai",
+                      _formatWaktu(
+                          widget.item['waktu_selesai_luar']?.toString())),
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       Text(
                         "Status: ",
                         style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black),
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -85,15 +90,19 @@ class _KontenRiwayatScreenState extends State<KontenRiwayatScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          widget.item['nama_status'],
+                          widget.item['id_status_luar'] == 2
+                              ? 'Selesai'
+                              : (widget.item['id_status_luar']?.toString() ??
+                                  'Tidak tersedia'),
                           style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
                         ),
                       ),
                     ],
-                  ),
+                  )
                 ],
               ),
             ),
@@ -103,7 +112,9 @@ class _KontenRiwayatScreenState extends State<KontenRiwayatScreen> {
                 Text(
                   'Detail',
                   style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.bold),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Container(
@@ -114,16 +125,16 @@ class _KontenRiwayatScreenState extends State<KontenRiwayatScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: logic!.isLoading
-                      ? Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: const CircularProgressIndicator(
+                      ? const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2.5),
                         )
                       : IconButton(
                           onPressed: () {
                             if (logic!.detailRiwayat.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
+                                const SnackBar(
                                   content: Text("⚠️ Belum ada riwayat!"),
                                   backgroundColor: Colors.orange,
                                   behavior: SnackBarBehavior.floating,
@@ -136,8 +147,11 @@ class _KontenRiwayatScreenState extends State<KontenRiwayatScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => DetailRiwayatScreen(
-                                  idRiwayat:
-                                      logic!.detailRiwayat.first['id_rekap'],
+                                  idRiwayat: int.tryParse(logic!
+                                              .detailRiwayat.first['id_rekap']
+                                              ?.toString() ??
+                                          '') ??
+                                      0,
                                   riwayatItem: logic!.detailRiwayat,
                                 ),
                               ),
@@ -168,12 +182,13 @@ class _KontenRiwayatScreenState extends State<KontenRiwayatScreen> {
           Text(
             "$title: ",
             style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
           ),
           Text(
-            value != null ? value.toString() : "Tidak tersedia",
+            value?.toString() ?? "Tidak tersedia",
             style: GoogleFonts.inter(fontSize: 14, color: Colors.black87),
           ),
         ],

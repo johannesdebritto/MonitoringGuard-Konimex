@@ -5,8 +5,9 @@ import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:monitoring_guard_frontend/riwayatpage/daftar_riwayat_luar.dart';
-
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:monitoring_guard_frontend/service/db_helper.dart';
+import 'package:monitoring_guard_frontend/service/init_db.dart';
+import 'package:monitoring_guard_frontend/service/riwayat_luar_helper.dart';
 
 class DaftarRiwayatScreen extends StatefulWidget {
   const DaftarRiwayatScreen({Key? key}) : super(key: key);
@@ -38,84 +39,72 @@ class DaftarRiwayatScreenState extends State<DaftarRiwayatScreen> {
       errorMessage = '';
     });
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isSubmitted =
-        prefs.getBool('isSubmitted') ?? false; // 🔥 Cek apakah sudah submit
-    String? idUnit = prefs.getString('id_unit')?.trim();
-    String? namaUnitPref = prefs.getString('nama_unit')?.trim();
-    String? storedIdRiwayat =
-        prefs.getString('id_riwayat')?.trim(); // Ambil idRiwayat
-
-    if (!isSubmitted) {
-      print("🚫 Belum submit, gak fetch riwayat.");
-      setState(() {
-        isLoading = false;
-        riwayatList = [];
-      });
-      return;
-    }
-
-    if (idUnit == null || idUnit.isEmpty) {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'ID Unit tidak ditemukan';
-      });
-      print("🚨 ID Unit tidak ditemukan");
-      return;
-    }
-
-    if (storedIdRiwayat == null || storedIdRiwayat.isEmpty) {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'ID Riwayat tidak ditemukan';
-      });
-      print("🚨 ID Riwayat tidak ditemukan");
-      return;
-    }
-
-    setState(() {
-      namaUnit = namaUnitPref ?? 'Unit Tidak Diketahui';
-      idRiwayat =
-          storedIdRiwayat; // Pastikan idRiwayat memiliki nilai yang valid
-    });
-
-    // Debug log sebelum request
-    print(
-        "🌍 Fetching from URL: ${dotenv.env['BASE_URL']}/api/submit/unit/$idUnit/$idRiwayat");
-
-    final url = Uri.parse(
-        '${dotenv.env['BASE_URL']}/api/submit/unit/$idUnit/$idRiwayat');
-
     try {
-      final response = await http.get(url);
-      print("📡 Fetch Riwayat Response: ${response.statusCode}");
+      final db = await InitDb.getDatabase();
 
-      if (response.statusCode == 200) {
-        var decodedBody = json.decode(response.body);
-        print("📋 Data Riwayat: $decodedBody");
+      // 🔍 Ambil data terbaru langsung dari SQLite (tanpa fungsi baru)
+      final latest = await db.query(
+        'riwayat_luar',
+        orderBy: 'id_riwayat DESC',
+        limit: 1,
+      );
 
-        if (decodedBody is List) {
-          setState(() {
-            riwayatList = decodedBody;
-          });
-        } else {
-          setState(() {
-            errorMessage = 'Format data tidak valid';
-          });
-        }
-      } else if (response.statusCode == 404) {
+      if (latest.isEmpty) {
         setState(() {
-          riwayatList = [];
-          errorMessage = 'Riwayat tidak ditemukan';
+          errorMessage = 'Belum ada data riwayat';
+          isLoading = false;
+        });
+        return;
+      }
+
+      String idUnit = latest.first['id_unit'].toString();
+      String idRiwayat = latest.first['id_riwayat'].toString();
+
+      print("📥 Ambil dari data terbaru: idUnit=$idUnit, idRiwayat=$idRiwayat");
+
+      final localData = await RiwayatLuarHelper.getRiwayatLuarByUnitDanRiwayat(
+          idUnit, idRiwayat);
+      print("📦 Data lokal hasil filter: $localData");
+
+      setState(() {
+        riwayatList = localData;
+        namaUnit = 'Unit Manual'; // Optional
+        this.idRiwayat = idRiwayat;
+      });
+      // ========================== API FETCH (DISABLE DULU) ==========================
+      /*
+    final url = Uri.parse('${dotenv.env['BASE_URL']}/api/submit/unit/$idUnit/$idRiwayat');
+    final response = await http.get(url);
+    print("📡 Fetch Riwayat Response: ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      var decodedBody = json.decode(response.body);
+      print("📋 Data Riwayat: $decodedBody");
+
+      if (decodedBody is List) {
+        setState(() {
+          riwayatList = decodedBody;
         });
       } else {
-        throw Exception('Gagal mengambil data (${response.statusCode})');
+        setState(() {
+          errorMessage = 'Format data tidak valid';
+        });
       }
+    } else if (response.statusCode == 404) {
+      setState(() {
+        riwayatList = [];
+        errorMessage = 'Riwayat tidak ditemukan';
+      });
+    } else {
+      throw Exception('Gagal mengambil data (${response.statusCode})');
+    }
+    */
+      // =============================================================================
     } catch (e) {
       setState(() {
-        errorMessage = 'Terjadi kesalahan saat mengambil data';
+        errorMessage = 'Terjadi kesalahan saat ambil data';
       });
-      print('🚨 Error Fetch Riwayat: $e');
+      print('🚨 Error fetchRiwayat: $e');
     } finally {
       setState(() {
         isLoading = false;

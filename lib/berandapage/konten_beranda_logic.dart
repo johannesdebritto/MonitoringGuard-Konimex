@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:monitoring_guard_frontend/service/db_helper.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_dalam_helper.dart';
+import 'package:monitoring_guard_frontend/service/riwayat_luar_helper.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -58,7 +60,8 @@ class KontenBerandaLogic {
     if (idRiwayat != null) {
       // Ambil data detail riwayat dalam berdasarkan ID
       final riwayatDetail =
-          await DBHelper.getDetailRiwayatDalamById(int.parse(idRiwayat));
+          await DetailRiwayatDalamHelper.getDetailRiwayatDalamById(
+              int.parse(idRiwayat));
       // Menghitung jumlah masalah berdasarkan jumlah data yang ditemukan
       _jumlahMasalah = riwayatDetail.length;
     } else {
@@ -100,50 +103,81 @@ class KontenBerandaLogic {
 
   Future<void> submitTugas(BuildContext context,
       {bool showSnackbar = false, bool refreshRiwayat = true}) async {
-    if (!await _isOnline()) {
-      debugPrint("📴 Offline: submitTugas skip HTTP");
-      if (showSnackbar)
-        _showSnackbar(context, "📴 Tidak ada koneksi internet!");
-      return;
-    }
-
     try {
       final prefs = await SharedPreferences.getInstance();
-
       final idRiwayat = prefs.getString('id_riwayat') ?? '';
+
       if (idRiwayat.isEmpty) {
         if (showSnackbar) _showSnackbar(context, "🚨 ID Riwayat kosong!");
         return;
       }
 
-      final response = await http.post(
-        Uri.parse('${dotenv.env['BASE_URL']}/api/submit'),
-        body: jsonEncode({"id_riwayat": idRiwayat}),
-        headers: {"Content-Type": "application/json"},
-      );
+      if (!await _isOnline()) {
+        debugPrint("📴 Offline: jalankan submit ke SQLite");
 
-      if (response.statusCode == 400) {
-        showDialog(context: context, builder: (_) => const ModalSubmitScreen());
-        return;
-      }
+        try {
+          // Gunakan try-catch untuk tangkap exception spesifik dari database
+          await RiwayatLuarHelper
+              .submitRiwayatLuar(); // Fungsi ini melempar exception jika belum selesai
+          await prefs.setBool('isSubmitted', true);
 
-      if (response.statusCode != 200) {
-        if (showSnackbar) {
-          _showSnackbar(
-              context, "❌ Gagal submit (HTTP ${response.statusCode})");
+          if (refreshRiwayat) {
+            context
+                .findAncestorStateOfType<DaftarRiwayatScreenState>()
+                ?.refreshRiwayat();
+          }
+
+          if (showSnackbar) {
+            _showSnackbar(context, "✅ Submit offline berhasil!", Colors.green);
+          }
+        } catch (e) {
+          debugPrint("❌ Error submit offline: $e");
+
+          // Cek apakah error karena tugas belum selesai (bisa pakai pengecekan isi pesan error)
+          if (e.toString().contains('Selesaikan semua tugas')) {
+            showDialog(
+                context: context, builder: (_) => const ModalSubmitScreen());
+          }
+
+          if (showSnackbar) {
+            _showSnackbar(context, "🚨 Gagal submit offline: ${e.toString()}");
+          }
         }
+
         return;
       }
 
-      await prefs.setBool('isSubmitted', true);
-      if (refreshRiwayat) {
-        context
-            .findAncestorStateOfType<DaftarRiwayatScreenState>()
-            ?.refreshRiwayat();
-      }
+      // Kode HTTP dikomentari (aktifkan kembali bila online-only)
+      /*
+    final response = await http.post(
+      Uri.parse('${dotenv.env['BASE_URL']}/api/submit'),
+      body: jsonEncode({"id_riwayat": idRiwayat}),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode == 400) {
+      showDialog(context: context, builder: (_) => const ModalSubmitScreen());
+      return;
+    }
+
+    if (response.statusCode != 200) {
       if (showSnackbar) {
-        _showSnackbar(context, "✅ Berhasil disimpan!", Colors.green);
+        _showSnackbar(context, "❌ Gagal submit (HTTP ${response.statusCode})");
       }
+      return;
+    }
+
+    await prefs.setBool('isSubmitted', true);
+    if (refreshRiwayat) {
+      context
+          .findAncestorStateOfType<DaftarRiwayatScreenState>()
+          ?.refreshRiwayat();
+    }
+
+    if (showSnackbar) {
+      _showSnackbar(context, "✅ Berhasil disimpan!", Colors.green);
+    }
+    */
     } catch (e) {
       debugPrint("❌ Error submit: $e");
       if (showSnackbar) _showSnackbar(context, "🚨 Error: ${e.toString()}");

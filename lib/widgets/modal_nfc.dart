@@ -4,6 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:monitoring_guard_frontend/service/db_helper.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_luar_helper.dart';
+import 'package:monitoring_guard_frontend/service/init_db.dart';
+import 'package:monitoring_guard_frontend/service/riwayat_luar_helper.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -69,30 +72,36 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
 
     try {
       // Offline version with dbHelper
-      final db = await DBHelper.initDb(); // Initialize the database
+      final db = await InitDb.getDatabase();
 
       final idStatus = isMasalah ? 3 : 2;
       final tanggal = DateTime.now().toIso8601String();
-      final jam =
-          TimeOfDay.now().format(context); // Use current time as example
+      final jam = TimeOfDay.now().format(context);
 
-      final idRiwayat =
-          widget.idTugas; // Assuming you have the idTugas as id_riwayat
+      // Fetch id_unit jika memang dibutuhkan
+      final idUnit = await RiwayatLuarHelper.getIdUnit();
 
-      // Assuming you also need to fetch id_unit from the database
-      final idUnit =
-          await DBHelper.getIdUnit(); // Fetch id_unit based on your logic
-
-      // Insert or update the record in detail_riwayat_luar
-      await DBHelper.insertDetailRiwayatLuar({
+      // Menyiapkan data untuk insert ke tabel `detail_riwayat_luar`
+      final dataToInsert = {
         'id_tugas': widget.idTugas,
         'id_status': idStatus,
         'tanggal_selesai': tanggal,
         'jam_selesai': jam,
         'id_anggota': namaAnggota,
-        'id_riwayat': idRiwayat,
-        'id_unit': idUnit, // Insert id_unit
-      });
+        'id_unit': idUnit,
+      };
+
+      // Jika status "masalah", tambahkan keterangan, tanggal gagal, dan waktu gagal
+      if (isMasalah) {
+        dataToInsert['keterangan_masalah'] = _keteranganController.text;
+        dataToInsert['tanggal_gagal'] =
+            tanggal; // Gunakan tanggal sekarang untuk tanggal gagal
+        dataToInsert['jam_gagal'] =
+            jam; // Gunakan jam sekarang untuk waktu gagal
+      }
+
+      // Insert ke `detail_riwayat_luar` dengan data yang telah disiapkan
+      await DetailRiwayatLuarHelper.insertDetailRiwayatLuar(dataToInsert);
 
       // Uncomment the below block for online request when ready to use it
       /*

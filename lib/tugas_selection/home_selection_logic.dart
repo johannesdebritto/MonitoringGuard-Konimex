@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'package:monitoring_guard_frontend/main.dart';
-import 'package:monitoring_guard_frontend/service/db_helper.dart';
+
+import 'package:monitoring_guard_frontend/service/riwayat_dalam_helper.dart';
+import 'package:monitoring_guard_frontend/service/riwayat_luar_helper.dart';
+
 import 'package:monitoring_guard_frontend/widgets/anggotamodal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -96,7 +99,7 @@ class HomeSelectionLogic {
     debugPrint("id_riwayat: $idRiwayat");
 
     if (tipe == "luar") {
-      await DBHelper.insertRiwayatLuar({
+      await RiwayatLuarHelper.insertRiwayatLuar({
         'id_unit': idUnit,
         'id_patroli': idPatroli,
         'id_anggota': anggota,
@@ -108,7 +111,7 @@ class HomeSelectionLogic {
         'waktu_selesai_luar': '', // kosong dulu kalau belum selesai
       });
     } else {
-      await DBHelper.insertRiwayatDalam({
+      await RiwayatDalamHelper.insertRiwayatDalam({
         'id_unit': idUnit,
         'id_patroli': idPatroli,
         'id_anggota': anggota,

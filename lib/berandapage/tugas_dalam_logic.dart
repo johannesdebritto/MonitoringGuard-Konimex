@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:monitoring_guard_frontend/service/db_helper.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_dalam_helper.dart';
 import 'package:monitoring_guard_frontend/widgets/patroli_dalam_modal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,7 +14,7 @@ class TugasDalamLogic {
       }
 
       final List<Map<String, dynamic>> localData =
-          await DBHelper.getDetailRiwayatDalamById(id);
+          await DetailRiwayatDalamHelper.getDetailRiwayatDalamById(id);
       return localData.length;
     } catch (e) {
       print('❌ Error hitung jumlah masalah lokal: $e');
@@ -29,7 +30,7 @@ class TugasDalamLogic {
       }
 
       final List<Map<String, dynamic>> localData =
-          await DBHelper.getDetailRiwayatDalamById(id);
+          await DetailRiwayatDalamHelper.getDetailRiwayatDalamById(id);
       return localData;
     } catch (e) {
       print('❌ Error ambil data patroli lokal: $e');

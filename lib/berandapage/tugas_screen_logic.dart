@@ -1,4 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_luar_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -82,7 +83,8 @@ class TugasScreenLogic {
 
     try {
       // === Akses Lokal ===
-      final allDetails = await DBHelper.getAllDetailRiwayatLuar();
+      final allDetails =
+          await DetailRiwayatLuarHelper.getAllDetailRiwayatLuar();
       final matchingDetail = allDetails.firstWhere(
         (item) =>
             item['id_tugas'].toString() == idTugas.toString() &&
@@ -130,31 +132,38 @@ class TugasScreenLogic {
   }
 
   Future<int?> cekStatusTugas(String idTugas, {bool force = false}) async {
+    print(
+        "🛠️ [cekStatusTugas] Mulai cek status | idTugas: $idTugas | force: $force");
+
     if (!force && _cachedStatus.containsKey(idTugas)) {
+      print(
+          "🧠 [Cache] Ditemukan: idTugas: $idTugas => status: ${_cachedStatus[idTugas]}");
       return _cachedStatus[idTugas];
     }
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? idRiwayat = prefs.getString('id_riwayat');
+    // Langsung cek status dari riwayat terbaru
+    try {
+      // Ambil idRiwayat terbaru dari DB lewat getIdStatusFromLatestRiwayat
+      final idStatus =
+          await DetailRiwayatLuarHelper.getStatusFromLatestRiwayat(idTugas);
 
-    if (idRiwayat == null || idRiwayat.isEmpty) {
-      print("🚨 ID Riwayat tidak ditemukan di SharedPreferences!");
+      if (idStatus != null) {
+        _cachedStatus[idTugas] = idStatus;
+        print(
+            "✅ [SUCCESS] Status ditemukan! | idTugas: $idTugas | idStatus: $idStatus");
+        return idStatus;
+      } else {
+        print(
+            "⚠️ [DB] Tidak ditemukan status atau bukan riwayat terbaru | idTugas: $idTugas");
+        return null;
+      }
+    } catch (e) {
+      print(
+          "❌ [EXCEPTION] Gagal mengambil data dari DB | idTugas: $idTugas | Error: $e");
       return null;
     }
 
-    // === Cek status tugas di database lokal ===
-    final tugas =
-        await DBHelper.getDetailRiwayatLuarByIdTugas(idTugas, idRiwayat);
-
-    if (tugas != null) {
-      final idStatus = tugas['id_status'] ?? 0;
-      _cachedStatus[idTugas] = idStatus;
-      return idStatus; // Status ditemukan di lokal
-    } else {
-      print("⚠️ Tugas tidak ditemukan di database lokal.");
-    }
-
-    // === Kalau tidak ada di lokal, cek ke server ===
+    // === Kalau tidak ada di lokal, cek ke server (opsional jika mau diaktifkan) ===
     /*
   final response = await http.get(
     Uri.parse(
@@ -177,7 +186,6 @@ class TugasScreenLogic {
     return null;
   }
   */
-    return null;
   }
 
   void clearCache() {

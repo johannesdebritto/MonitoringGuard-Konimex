@@ -21,23 +21,32 @@ class _TopBarScreenState extends State<TopBarScreen> {
 
     debugPrint("🟡 tipe_patroli: $tipePatroli");
 
-    if (tipePatroli == "dalam") {
-      await prefs.remove('patroli_data'); // ✅ Hapus data tipe dalam
-      await prefs.remove('tipe_patroli'); // (Opsional) biar bersih sekalian
+    // Pengecekan tipe patroli 'dalam' atau 'luar', biarkan selalu kembali ke HomeSelectionScreen
+    // if (tipePatroli == "dalam") {
+    //   await prefs.remove('patroli_data'); // ✅ Hapus data tipe dalam
+    //   await prefs.remove('tipe_patroli'); // (Opsional) biar bersih sekalian
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeSelectionScreen()),
-        (route) => false,
-      );
-      return;
-    }
+    //   Navigator.pushAndRemoveUntil(
+    //     context,
+    //     MaterialPageRoute(builder: (_) => const HomeSelectionScreen()),
+    //     (route) => false,
+    //   );
+    //   return;
+    // }
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return KembaliModal(idRiwayat: idRiwayat ?? '');
-      },
+    // Modal hanya ditampilkan jika tipe patroli adalah luar (dihapus dulu)
+    // showDialog(
+    //   context: context,
+    //   builder: (BuildContext context) {
+    //     return KembaliModal(idRiwayat: idRiwayat ?? '');
+    //   },
+    // );
+
+    // Tetap arahkan ke HomeSelectionScreen tanpa kondisi
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const HomeSelectionScreen()),
+      (route) => false,
     );
   }
 

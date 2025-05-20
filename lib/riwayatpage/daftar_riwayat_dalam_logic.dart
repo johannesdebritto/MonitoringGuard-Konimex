@@ -1,4 +1,4 @@
-import 'package:monitoring_guard_frontend/service/db_helper.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_dalam_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DetailRiwayatDalamService {
@@ -27,7 +27,8 @@ class DetailRiwayatDalamService {
 
       // Mengambil data dari database lokal (SQLite)
       final riwayatDetail =
-          await DBHelper.getDetailRiwayatDalamById(int.parse(idRiwayat));
+          await DetailRiwayatDalamHelper.getDetailRiwayatDalamById(
+              int.parse(idRiwayat));
 
       if (riwayatDetail.isEmpty) {
         print("❌ Data riwayat tidak ditemukan di penyimpanan lokal.");

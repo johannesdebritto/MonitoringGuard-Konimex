@@ -6,7 +6,7 @@ import 'riwayat_luar_helper.dart';
 import 'riwayat_dalam_helper.dart';
 import 'detail_riwayat_dalam_helper.dart';
 import 'detail_riwayat_luar_helper.dart';
-import 'tugas_unit_helper.dart';
+import 'rekap_unit_helper.dart';
 
 class InitDb {
   static Database? _database;
@@ -27,7 +27,7 @@ class InitDb {
         await RiwayatDalamHelper.createTable(db);
         await DetailRiwayatDalamHelper.createTable(db);
         await DetailRiwayatLuarHelper.createTable(db);
-        await TugasUnitHelper.createTable(db);
+        await RekapUnitHelper.createTable(db);
       },
     );
 

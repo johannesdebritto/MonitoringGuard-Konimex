@@ -68,9 +68,11 @@ class DaftarRiwayatScreenState extends State<DaftarRiwayatScreen> {
 
       setState(() {
         riwayatList = localData;
-        namaUnit = 'Unit Manual'; // Optional
+        namaUnit = localData.first['nama_unit'] ??
+            'Unit Tidak Diketahui'; // ✅ Ini ambil dari DB
         this.idRiwayat = idRiwayat;
       });
+
       // ========================== API FETCH (DISABLE DULU) ==========================
       /*
     final url = Uri.parse('${dotenv.env['BASE_URL']}/api/submit/unit/$idUnit/$idRiwayat');

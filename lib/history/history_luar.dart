@@ -54,7 +54,7 @@ class _HistoryLuarViewState extends State<HistoryLuarView> {
                         const Icon(LucideIcons.calendar, size: 18),
                         const SizedBox(width: 6),
                         Text(
-                          items[0]['tanggal_selesai'] ?? '-',
+                          _formatTanggal(items[0]['tanggal_selesai']),
                           style: GoogleFonts.inter(fontSize: 14),
                         ),
                       ],
@@ -95,8 +95,47 @@ class _HistoryLuarViewState extends State<HistoryLuarView> {
                               item['jam_selesai']),
                           _buildRow(LucideIcons.alertTriangle, 'Masalah',
                               item['keterangan_masalah']),
-                          _buildRow(LucideIcons.checkCircle2, 'Status',
-                              item['nama_status']),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Row(
+                              children: [
+                                Icon(LucideIcons.checkCircle2,
+                                    size: 18, color: Colors.grey[700]),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: item['id_status'] == 2
+                                          ? Colors.green
+                                          : item['id_status'] == 3
+                                              ? Colors.red
+                                              : Colors.grey,
+                                      width: 1.5,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    item['id_status'] == 2
+                                        ? 'Selesai'
+                                        : item['id_status'] == 3
+                                            ? 'Ada Masalah'
+                                            : 'Tidak Diketahui',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: item['id_status'] == 2
+                                          ? Colors.green
+                                          : item['id_status'] == 3
+                                              ? Colors.red
+                                              : Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           const Divider(thickness: 0.8, height: 12),
                         ],
                       ),
@@ -123,5 +162,36 @@ class _HistoryLuarViewState extends State<HistoryLuarView> {
         ),
       ],
     );
+  }
+
+  String _formatTanggal(String? rawDate) {
+    if (rawDate == null) return '-';
+    try {
+      DateTime dt = DateTime.parse(rawDate);
+      return '${dt.day.toString().padLeft(2, '0')} '
+          '${_namaBulan(dt.month)} '
+          '${dt.year}';
+    } catch (e) {
+      return '-';
+    }
+  }
+
+  String _namaBulan(int bulan) {
+    const bulanIndo = [
+      '',
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
+    ];
+    return bulanIndo[bulan];
   }
 }

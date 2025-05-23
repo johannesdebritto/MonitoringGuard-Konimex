@@ -42,10 +42,14 @@ class DetailRiwayatLuarHelper {
     }
   }
 
-  // Ambil semua data
   static Future<List<Map<String, dynamic>>> getAllDetailRiwayatLuar() async {
     final db = await InitDb.getDatabase();
-    return await db.query('detail_riwayat_luar');
+    return await db.rawQuery('''
+    SELECT d.*, u.nama_unit, t.nama_tugas
+    FROM detail_riwayat_luar d
+    JOIN unit u ON d.id_unit = u.id_unit
+    JOIN tugas_unit t ON d.id_unit = t.id_unit AND d.id_tugas = t.id_tugas
+  ''');
   }
 
   // Ambil status tugas tertentu dari riwayat terakhir
@@ -125,14 +129,44 @@ class DetailRiwayatLuarHelper {
     return null;
   }
 
-  // Ambil detail riwayat luar berdasarkan unit dan riwayat
   static Future<List<Map<String, dynamic>>> getDetailRiwayatLuarOffline(
       int idUnit, int idRiwayat) async {
     final db = await InitDb.getDatabase();
-    return await db.query(
-      'detail_riwayat_luar',
-      where: 'id_unit = ? AND id_riwayat = ?',
-      whereArgs: [idUnit, idRiwayat],
-    );
+    return await db.rawQuery('''
+    SELECT d.*, t.nama_tugas
+    FROM detail_riwayat_luar d
+    JOIN tugas_unit t 
+      ON d.id_unit = t.id_unit 
+     AND d.id_tugas = t.id_tugas
+    WHERE d.id_unit = ? AND d.id_riwayat = ?
+  ''', [idUnit, idRiwayat]);
+  }
+
+  static Future<bool> isDetailRiwayatValid() async {
+    final db = await InitDb.getDatabase();
+
+    // Ambil id_riwayat terbaru dari riwayat_luar
+    final riwayatResult = await db.rawQuery('''
+    SELECT id_riwayat 
+    FROM riwayat_luar 
+    ORDER BY id_riwayat DESC 
+    LIMIT 1
+  ''');
+
+    if (riwayatResult.isEmpty) return true; // Tidak ada riwayat sama sekali
+
+    int latestIdRiwayat = riwayatResult.first['id_riwayat'] as int;
+
+    // Hitung jumlah detail dengan id_riwayat tersebut
+    final countResult = await db.rawQuery('''
+    SELECT COUNT(*) as total 
+    FROM detail_riwayat_luar 
+    WHERE id_riwayat = ?
+  ''', [latestIdRiwayat]);
+
+    int total = Sqflite.firstIntValue(countResult) ?? 0;
+
+    // ✅ Return true jika jumlah = 5 atau = 0
+    return total == 5 || total == 0;
   }
 }

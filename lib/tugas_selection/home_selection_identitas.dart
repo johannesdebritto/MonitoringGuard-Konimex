@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:monitoring_guard_frontend/service/sync_helper.dart';
 import 'package:monitoring_guard_frontend/widgets/logoutmodal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -119,7 +120,8 @@ class _HomeSelectionIdentitasState extends State<HomeSelectionIdentitas> {
             Align(
               alignment: Alignment.centerLeft,
               child: ElevatedButton.icon(
-                icon: Icon(LucideIcons.logOut, color: Colors.white),
+                icon: Icon(LucideIcons.logOut,
+                    color: Colors.white), // icon tombol biasa
                 label: Text(
                   "Logout",
                   style: GoogleFonts.inter(
@@ -128,7 +130,18 @@ class _HomeSelectionIdentitasState extends State<HomeSelectionIdentitas> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                onPressed: _logout, // Menampilkan modal konfirmasi logout
+                onPressed: () async {
+                  try {
+                    final syncHelper = SyncHelper();
+                    final data = await syncHelper.getDataForSync();
+
+                    print(
+                        "🦄✨ Data berhasil diambil: $data"); // print lucu sukses
+                  } catch (e) {
+                    print("💥😱 Gagal ambil data: $e"); // print lucu error
+                  }
+                  _logout(); // panggil fungsi logout asli
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   padding:

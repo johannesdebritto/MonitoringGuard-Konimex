@@ -79,7 +79,7 @@ class RiwayatLuarHelper {
     );
   }
 
-  // Ambil riwayat berdasarkan id_unit dan id_riwayat
+// Ambil riwayat luar beserta nama unit berdasarkan id_unit dan id_riwayat
   static Future<List<Map<String, dynamic>>> getRiwayatLuarByUnitDanRiwayat(
       String idUnit, String idRiwayat) async {
     final db = await InitDb.getDatabase();
@@ -87,10 +87,11 @@ class RiwayatLuarHelper {
     int parsedIdUnit = int.tryParse(idUnit) ?? -1;
     int parsedIdRiwayat = int.tryParse(idRiwayat) ?? -1;
 
-    return await db.query(
-      'riwayat_luar',
-      where: 'id_unit = ? AND id_riwayat = ?',
-      whereArgs: [parsedIdUnit, parsedIdRiwayat],
-    );
+    return await db.rawQuery('''
+    SELECT rl.*, u.nama_unit
+    FROM riwayat_luar rl
+    JOIN unit u ON rl.id_unit = u.id_unit
+    WHERE rl.id_unit = ? AND rl.id_riwayat = ?
+  ''', [parsedIdUnit, parsedIdRiwayat]);
   }
 }

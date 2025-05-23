@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_dalam_helper.dart';
+import 'package:monitoring_guard_frontend/service/detail_riwayat_luar_helper.dart';
 import 'package:monitoring_guard_frontend/widgets/kembalimodal.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:monitoring_guard_frontend/tugas_selection/home_selection.dart';
+import 'package:monitoring_guard_frontend/widgets/modal_submit_luar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TopBarScreen extends StatefulWidget {
   final String title;
@@ -42,12 +45,28 @@ class _TopBarScreenState extends State<TopBarScreen> {
     //   },
     // );
 
-    // Tetap arahkan ke HomeSelectionScreen tanpa kondisi
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const HomeSelectionScreen()),
-      (route) => false,
-    );
+    if (tipePatroli == 'luar') {
+      bool valid = await DetailRiwayatLuarHelper.isDetailRiwayatValid();
+      if (valid) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeSelectionScreen()),
+          (route) => false,
+        );
+      } else {
+        showDialog(
+          context: context,
+          builder: (context) => const ModalSubmitScreen(),
+        );
+      }
+    } else {
+      // Default: langsung kembali ke HomeSelectionScreen
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeSelectionScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override

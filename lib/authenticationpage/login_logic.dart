@@ -7,7 +7,7 @@ import 'package:monitoring_guard_frontend/authenticationpage/warning_modal.dart'
 import 'package:monitoring_guard_frontend/history/history_logic.dart';
 import 'package:monitoring_guard_frontend/service/db_helper.dart';
 import 'package:monitoring_guard_frontend/service/init_db.dart';
-import 'package:monitoring_guard_frontend/service/tugas_unit_helper.dart';
+import 'package:monitoring_guard_frontend/service/rekap_unit_helper.dart';
 import 'package:monitoring_guard_frontend/tugas_selection/home_selection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:monitoring_guard_frontend/berandapage/tugas_screen_logic.dart';
@@ -179,7 +179,7 @@ class LoginLogic {
             // Pastikan id_unit ada
             print("🟠 [LOGIN] Saving task: ${tugas['nama_tugas']}");
             try {
-              await TugasUnitHelper.insertTugasUnit({
+              await RekapUnitHelper.insertRekapUnit({
                 'id_unit': tugas['id_unit'],
                 'nama_tugas': tugas['nama_tugas'],
                 'id_status': tugas['id_status'] ?? 1,

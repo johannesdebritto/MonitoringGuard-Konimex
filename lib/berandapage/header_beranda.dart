@@ -42,7 +42,7 @@ class _HeaderBerandaState extends State<HeaderBeranda> {
           Padding(
             padding: const EdgeInsets.only(
                 bottom: 5), // Jarak sedikit dengan teks berikutnya
-            child: TopBarScreen(title: 'Halaman Riwayat'),
+            child: TopBarScreen(title: 'Halaman Patroli'),
           ),
           // Teks tambahan (Hallo & Selamat Bertugas)
           Text(

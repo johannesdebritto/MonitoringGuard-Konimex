@@ -111,6 +111,10 @@ class LoginLogic {
         prefs.setString('anggota1', data['anggota1'] ?? ""),
         prefs.setString('anggota2', data['anggota2'] ?? ""),
         prefs.setString('id_patroli', (data['id_patroli'] ?? "").toString()),
+        prefs.setString(
+            'id_anggota_1', (data['id_anggota_1'] ?? "").toString()),
+        prefs.setString(
+            'id_anggota_2', (data['id_anggota_2'] ?? "").toString()),
       ]);
       print("🟢 [LOGIN] All login data saved successfully");
     } catch (e) {

@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:monitoring_guard_frontend/service/detail_riwayat_dalam_helper.dart';
 import 'package:monitoring_guard_frontend/service/detail_riwayat_luar_helper.dart';
+import 'package:monitoring_guard_frontend/widgets/connection_indicator.dart';
 import 'package:monitoring_guard_frontend/widgets/kembalimodal.dart';
 import 'package:monitoring_guard_frontend/tugas_selection/home_selection.dart';
 import 'package:monitoring_guard_frontend/widgets/modal_submit_luar.dart';
@@ -72,16 +73,26 @@ class _TopBarScreenState extends State<TopBarScreen> {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          widget.title,
-          style: GoogleFonts.inter(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+        // Judul Patroli
+        Expanded(
+          child: Text(
+            widget.title,
+            style: GoogleFonts.inter(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
+
+        // Indikator koneksi di tengah
+        const Padding(
+          padding: EdgeInsets.only(right: 12),
+          child: ConnectionIndicator(type: IndicatorType.dalam),
+        ),
+
+        // Tombol keluar
         ElevatedButton.icon(
           onPressed: _showExitConfirmation,
           icon: SvgPicture.asset(

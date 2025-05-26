@@ -43,8 +43,8 @@ class TugasService {
             data['waktu_selesai_dalam'] == null ||
             data['waktu_selesai_dalam'].toString().isEmpty) {
           Map<String, dynamic> updatedData = {
-            'id_status_dalam': localData['id_status_dalam'] ??
-                "completed", // Default jika kosong
+            'id_status_dalam':
+                localData['id_status_dalam'] ?? "2", // Default jika kosong
             'waktu_selesai_dalam': localData['waktu_selesai_dalam'] ??
                 DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()),
           };

@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:monitoring_guard_frontend/service/db_helper.dart';
 import 'package:monitoring_guard_frontend/service/detail_riwayat_luar_helper.dart';
 import 'package:monitoring_guard_frontend/service/init_db.dart';
@@ -47,8 +48,19 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
   }
 
   Future<void> updateStatus() async {
-    if (namaAnggota.isEmpty) {
-      showError("Nama anggota tidak ditemukan! Harap login ulang.");
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Ambil ID anggota yang benar
+    final idAnggota = prefs.getString('anggota_terpilih_id') ??
+        prefs.getString('id_anggota_1') ??
+        "unknown";
+
+    final namaAnggotaPrefs = prefs.getString('anggota_terpilih_nama') ??
+        prefs.getString('anggota1') ??
+        "Anggota Tidak Diketahui";
+
+    if (idAnggota == "unknown") {
+      showError("ID anggota tidak ditemukan! Harap login ulang.");
       return;
     }
 
@@ -65,7 +77,7 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
     final body = jsonEncode({
       "id_status": isMasalah ? 3 : 2,
       "waktu": DateTime.now().toIso8601String(),
-      "nama_anggota": namaAnggota,
+      "nama_anggota": namaAnggotaPrefs,
       "id_riwayat": widget.idTugas,
       if (isMasalah) "keterangan": _keteranganController.text,
     });
@@ -76,7 +88,8 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
 
       final idStatus = isMasalah ? 3 : 2;
       final tanggal = DateTime.now().toIso8601String();
-      final jam = TimeOfDay.now().format(context);
+      final now = DateTime.now();
+      final jam = DateFormat('HH:mm:ss').format(now);
 
       // Fetch id_unit jika memang dibutuhkan
       final idUnit = await RiwayatLuarHelper.getIdUnit();
@@ -87,17 +100,15 @@ class _NFCModalScreenState extends State<NFCModalScreen> {
         'id_status': idStatus,
         'tanggal_selesai': tanggal,
         'jam_selesai': jam,
-        'id_anggota': namaAnggota,
+        'id_anggota': idAnggota, // ✅ Perbaikan di sini
         'id_unit': idUnit,
       };
 
       // Jika status "masalah", tambahkan keterangan, tanggal gagal, dan waktu gagal
       if (isMasalah) {
         dataToInsert['keterangan_masalah'] = _keteranganController.text;
-        dataToInsert['tanggal_gagal'] =
-            tanggal; // Gunakan tanggal sekarang untuk tanggal gagal
-        dataToInsert['jam_gagal'] =
-            jam; // Gunakan jam sekarang untuk waktu gagal
+        dataToInsert['tanggal_gagal'] = tanggal;
+        dataToInsert['jam_gagal'] = jam;
       }
 
       // Insert ke `detail_riwayat_luar` dengan data yang telah disiapkan

@@ -19,6 +19,8 @@ class TugasScreenLogic {
   final Map<String, Map<String, dynamic>> _cachedRekap = {};
   final Map<String, int> _cachedStatus = {};
 
+  String? _lastFetchedUnitId; // ✅ Tambahan untuk mengecek id_unit terakhir
+
   Future<String> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('anggota_terpilih') ??
@@ -41,14 +43,15 @@ class TugasScreenLogic {
   }
 
   Future<List> fetchTugas({bool force = false}) async {
-    if (!force && _cachedTugas.isNotEmpty) {
-      _tugasList = _cachedTugas;
-      return _cachedTugas;
-    }
-
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? idUnit = prefs.getString('id_unit');
     if (idUnit == null) return [];
+
+    // ✅ Cek apakah perlu refetch berdasarkan perubahan unit
+    if (!force && _cachedTugas.isNotEmpty && _lastFetchedUnitId == idUnit) {
+      _tugasList = _cachedTugas;
+      return _cachedTugas;
+    }
 
     try {
       final response = await http
@@ -57,6 +60,7 @@ class TugasScreenLogic {
       if (response.statusCode == 200) {
         _cachedTugas = json.decode(response.body);
         _tugasList = _cachedTugas;
+        _lastFetchedUnitId = idUnit; // ✅ Simpan unit yang terakhir di-fetch
         return _cachedTugas;
       } else {
         throw Exception("Gagal mengambil data tugas");
@@ -105,26 +109,26 @@ class TugasScreenLogic {
 
       // === Kalau mau aktifkan server lagi, buka komentar ini ===
       /*
-    final url = Uri.parse(
-        '${dotenv.env['BASE_URL']}/api/tugas/rekap/$idTugas/$idRiwayat');
-    print("🔍 Fetching: $url");
+      final url = Uri.parse(
+          '${dotenv.env['BASE_URL']}/api/tugas/rekap/$idTugas/$idRiwayat');
+      print("🔍 Fetching: $url");
 
-    final response = await http.get(url);
+      final response = await http.get(url);
 
-    if (response.statusCode == 200) {
-      print("✅ Data ditemukan dari server!");
-      final data = json.decode(response.body);
-      _cachedRekap[idTugas] = data;
-      return data;
-    } else if (response.statusCode == 404) {
-      print("⚠️ Tugas belum dimulai, data masih kosong (server).");
-      _cachedRekap[idTugas] = {};
-      return {};
-    } else {
-      print("❌ Gagal fetch rekap dari server: ${response.statusCode} - ${response.body}");
-      return null;
-    }
-    */
+      if (response.statusCode == 200) {
+        print("✅ Data ditemukan dari server!");
+        final data = json.decode(response.body);
+        _cachedRekap[idTugas] = data;
+        return data;
+      } else if (response.statusCode == 404) {
+        print("⚠️ Tugas belum dimulai, data masih kosong (server).");
+        _cachedRekap[idTugas] = {};
+        return {};
+      } else {
+        print("❌ Gagal fetch rekap dari server: ${response.statusCode} - ${response.body}");
+        return null;
+      }
+      */
     } catch (e) {
       print("❌ Error saat fetch rekap lokal: $e");
       return null;
@@ -165,27 +169,27 @@ class TugasScreenLogic {
 
     // === Kalau tidak ada di lokal, cek ke server (opsional jika mau diaktifkan) ===
     /*
-  final response = await http.get(
-    Uri.parse(
-        '${dotenv.env['BASE_URL']}/api/tugas/cek-status/$idTugas/$idRiwayat'),
-  );
+    final response = await http.get(
+      Uri.parse(
+          '${dotenv.env['BASE_URL']}/api/tugas/cek-status/$idTugas/$idRiwayat'),
+    );
 
-  print("🔍 Cek status tugas: ${response.request?.url}");
+    print("🔍 Cek status tugas: ${response.request?.url}");
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    _cachedStatus[idTugas] = data['id_status'];
-    return data['id_status'];
-  } else if (response.statusCode == 404) {
-    print("⚠️ Tidak ada tugas ditemukan, dianggap kosong.");
-    _cachedStatus[idTugas] = 0;
-    return 0;
-  } else {
-    print(
-        "❌ Gagal mengecek status tugas: ${response.statusCode} - ${response.body}");
-    return null;
-  }
-  */
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      _cachedStatus[idTugas] = data['id_status'];
+      return data['id_status'];
+    } else if (response.statusCode == 404) {
+      print("⚠️ Tidak ada tugas ditemukan, dianggap kosong.");
+      _cachedStatus[idTugas] = 0;
+      return 0;
+    } else {
+      print(
+          "❌ Gagal mengecek status tugas: ${response.statusCode} - ${response.body}");
+      return null;
+    }
+    */
   }
 
   void clearCache() {
@@ -193,6 +197,7 @@ class TugasScreenLogic {
     _cachedRekap.clear();
     _cachedStatus.clear();
     _tugasList = [];
+    _lastFetchedUnitId = null; // ✅ Reset juga id_unit yang terakhir
   }
 
   void setTugasList(List<dynamic> tugas) {

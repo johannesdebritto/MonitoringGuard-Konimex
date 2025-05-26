@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 import 'init_db.dart'; // import init_db.dart yang sudah dibuat
 
@@ -35,6 +36,16 @@ class DetailRiwayatLuarHelper {
 
       data['id_riwayat'] = latestRiwayatId;
       data['id_unit'] = latestUnitId;
+
+      // Perbaiki format jam_selesai
+      if (data.containsKey('jam_selesai') && data['jam_selesai'] is String) {
+        try {
+          final parsedTime = DateFormat.jm().parse(data['jam_selesai']);
+          data['jam_selesai'] = DateFormat('HH:mm:ss').format(parsedTime);
+        } catch (e) {
+          print('Format jam_selesai error: $e');
+        }
+      }
 
       return await db.insert('detail_riwayat_luar', data);
     } else {

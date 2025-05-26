@@ -11,7 +11,7 @@ class RiwayatDalamHelper {
         id_patroli INTEGER NOT NULL,
         id_unit_kerja INTEGER NOT NULL,
         id_anggota INTEGER NOT NULL,
-        id_status_dalam TEXT,
+        id_status_dalam INTEGER,
         hari TEXT NOT NULL,
         tanggal TEXT NOT NULL,
         waktu_mulai_dalam TEXT,
@@ -53,5 +53,15 @@ class RiwayatDalamHelper {
       where: 'id_riwayat = ?',
       whereArgs: [idRiwayat],
     );
+  }
+
+  static Future<int?> getLastIdRiwayatDalam() async {
+    final db = await InitDb.getDatabase();
+    final result = await db.rawQuery(
+        'SELECT id_riwayat FROM riwayat_dalam ORDER BY id_riwayat DESC LIMIT 1');
+    if (result.isNotEmpty) {
+      return result.first['id_riwayat'] as int;
+    }
+    return null;
   }
 }

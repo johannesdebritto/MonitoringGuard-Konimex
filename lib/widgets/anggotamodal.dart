@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AnggotaModalScreen extends StatefulWidget {
-  final List<String> anggotaTersedia;
-  final Function(String) onAnggotaDipilih;
+  final Map<String, String> anggotaTersedia; // <id, nama>
+  final Function(String, String) onAnggotaDipilih; // id, nama
 
   const AnggotaModalScreen({
     super.key,
@@ -12,8 +12,11 @@ class AnggotaModalScreen extends StatefulWidget {
     required this.onAnggotaDipilih,
   });
 
-  static void show(BuildContext context, List<String> anggotaTersedia,
-      Function(String) onAnggotaDipilih) {
+  static void show(
+    BuildContext context,
+    Map<String, String> anggotaTersedia,
+    Function(String, String) onAnggotaDipilih,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
@@ -46,7 +49,10 @@ class _AnggotaModalScreenState extends State<AnggotaModalScreen> {
         child: IntrinsicWidth(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: widget.anggotaTersedia.map((anggota) {
+            children: widget.anggotaTersedia.entries.map((entry) {
+              final id = entry.key;
+              final nama = entry.value;
+
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: SizedBox(
@@ -62,13 +68,13 @@ class _AnggotaModalScreenState extends State<AnggotaModalScreen> {
                     onPressed: () async {
                       SharedPreferences prefs =
                           await SharedPreferences.getInstance();
-                      await prefs.setString('anggota_terpilih',
-                          anggota); // Simpan anggota yang dipilih
+                      await prefs.setString('anggota_terpilih', id);
+                      await prefs.setString('nama_anggota_terpilih', nama);
 
-                      widget.onAnggotaDipilih(anggota);
+                      widget.onAnggotaDipilih(id, nama);
                       Navigator.pop(context);
                     },
-                    child: Text(anggota,
+                    child: Text(nama,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter()),
                   ),

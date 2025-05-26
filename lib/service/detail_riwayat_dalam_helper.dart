@@ -2,14 +2,12 @@ import 'package:sqflite/sqflite.dart';
 import 'init_db.dart'; // import init_db.dart yang sudah dibuat
 
 class DetailRiwayatDalamHelper {
-  // Tidak perlu initDb lagi di sini karena sudah di init_db.dart
-
   // Membuat tabel tetap di sini supaya bisa dipanggil saat onCreate
   static Future<void> createTable(Database db) async {
     await db.execute(''' 
       CREATE TABLE IF NOT EXISTS detail_riwayat_dalam (
         id_rekap INTEGER PRIMARY KEY AUTOINCREMENT,
-        nama_anggota TEXT NOT NULL,
+        id_anggota INTEGER NOT NULL,          -- diubah dari nama_anggota TEXT menjadi id_anggota INTEGER
         id_status INTEGER NOT NULL,
         bagian TEXT,
         keterangan_masalah TEXT,

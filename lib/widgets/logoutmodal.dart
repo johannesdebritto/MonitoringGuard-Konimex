@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:monitoring_guard_frontend/service/sync_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -21,12 +22,29 @@ class _LogoutModalState extends State<LogoutModal> {
     setState(() => isLoading = true);
 
     try {
-      final url = Uri.parse('${dotenv.env['BASE_URL']}/api/sync');
+      final url = Uri.parse('${dotenv.env['BASE_URL']}/api/sync/save');
 
-      // TODO: Ganti dengan data sync asli dari helper
-      final dataToSync = [];
+      // Ambil data asli dari SQLite atau helper kamu
+      final dataToSync = await SyncHelper().getDataForSync();
 
-      print("📤 [NAGA SYNC] Mengirim data: $dataToSync");
+      // Debug: Pisahkan dan cetak berdasarkan tipe data
+      final riwayatLuar =
+          dataToSync.where((item) => item['type'] == 'riwayat_luar').toList();
+      final detailLuar = dataToSync
+          .where((item) => item['type'] == 'detail_riwayat_luar')
+          .toList();
+      final riwayatDalam =
+          dataToSync.where((item) => item['type'] == 'riwayat_dalam').toList();
+      final detailDalam = dataToSync
+          .where((item) => item['type'] == 'detail_riwayat_dalam')
+          .toList();
+
+      print("📤 [DEBUG RIWAYAT_LUAR] => $riwayatLuar");
+      print("📤 [DEBUG DETAIL_RIWAYAT_LUAR] => $detailLuar");
+      print("📤 [DEBUG RIWAYAT_DALAM] => $riwayatDalam");
+      print("📤 [DEBUG DETAIL_RIWAYAT_DALAM] => $detailDalam");
+
+      print("📦 [NAGA SYNC] Data lengkap yang akan dikirim: $dataToSync");
 
       final response = await http.post(
         url,
@@ -117,6 +135,23 @@ class _LogoutModalState extends State<LogoutModal> {
                           ),
                           style: TextButton.styleFrom(
                             backgroundColor: Colors.red,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.clear();
+                            widget.onLogout();
+                          },
+                          child: Text(
+                            "Coba",
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.orange,
                           ),
                         ),
                       ],

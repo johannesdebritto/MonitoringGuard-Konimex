@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:monitoring_guard_frontend/service/db_helper.dart';
 import 'package:monitoring_guard_frontend/service/detail_riwayat_dalam_helper.dart';
+import 'package:monitoring_guard_frontend/service/riwayat_dalam_helper.dart'; // Tambahkan ini
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PatroliDalamLogic {
@@ -20,16 +20,15 @@ class PatroliDalamLogic {
 
     // Ambil data dari shared preferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? namaAnggota = prefs.getString('anggota_terpilih');
-    String? idRiwayatString = prefs.getString('id_riwayat');
-    int? idRiwayat = idRiwayatString != null
-        ? int.tryParse(idRiwayatString)
-        : prefs.getInt('id_riwayat');
+    String? idAnggota = prefs.getString('anggota_terpilih_id');
+
+    // Ambil id_riwayat terbaru dari tabel riwayat_dalam
+    int? idRiwayat = await RiwayatDalamHelper.getLastIdRiwayatDalam();
 
     // Validasi data penting
-    if (namaAnggota == null || idRiwayat == null) {
+    if (idAnggota == null || idRiwayat == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Anggota atau ID Riwayat belum dipilih")),
+        const SnackBar(content: Text("Anggota atau ID Riwayat belum tersedia")),
       );
       return false;
     }
@@ -43,7 +42,7 @@ class PatroliDalamLogic {
     // Buat data map
     final Map<String, dynamic> data = {
       "id_riwayat": idRiwayat,
-      "nama_anggota": namaAnggota,
+      "id_anggota": idAnggota,
       "id_status": 3,
       "bagian": bagian.trim(),
       "keterangan_masalah": keterangan.trim(),

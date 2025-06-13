@@ -23,8 +23,9 @@ class _RiwayatHeaderScreenState extends State<RiwayatHeaderScreen> {
   Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      namaAnggota =
-          prefs.getString('anggota_terpilih') ?? "Anggota Tidak Diketahui";
+      namaAnggota = prefs.getString('anggota_terpilih') ??
+          prefs.getString('anggota1') ?? // Ambil dari anggota1 kalau tidak ada
+          "Anggota Tidak Diketahui";
       namaUnit = prefs.getString('nama_unit') ?? "Unit Tidak Diketahui";
     });
   }
@@ -33,14 +34,14 @@ class _RiwayatHeaderScreenState extends State<RiwayatHeaderScreen> {
   Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFFD00000),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 35),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, // Sejajarkan ke kiri
         children: [
           // Baris pertama: TopBarScreen (title sejajar dengan teks di bawah)
           Padding(
             padding: const EdgeInsets.only(
-                bottom: 5), // Jarak sedikit dengan teks berikutnya
+                bottom: 10), // Jarak sedikit dengan teks berikutnya
             child: TopBarScreen(title: 'Halaman Riwayat'),
           ),
 

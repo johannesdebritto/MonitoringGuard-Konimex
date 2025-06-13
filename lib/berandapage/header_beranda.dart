@@ -34,14 +34,14 @@ class _HeaderBerandaState extends State<HeaderBeranda> {
   Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFFD00000),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 35),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, // Biar teks rata kiri
         children: [
           // Baris pertama: "Halaman Beranda" & Logout (dari TopBarScreen)
           Padding(
             padding: const EdgeInsets.only(
-                bottom: 5), // Jarak sedikit dengan teks berikutnya
+                bottom: 10), // Jarak sedikit dengan teks berikutnya
             child: TopBarScreen(title: 'Halaman Patroli'),
           ),
           // Teks tambahan (Hallo & Selamat Bertugas)

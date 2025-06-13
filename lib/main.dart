@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,23 +9,25 @@ import 'package:monitoring_guard_frontend/widgets/BottomNavbar.dart';
 import 'package:monitoring_guard_frontend/widgets/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// 🔧 Tambahkan untuk SQLite offline
+// ✅ Tambahkan hanya jika di desktop
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-// ✅ Tambahkan untuk inisialisasi locale DateFormat
+// ✅ Untuk inisialisasi format tanggal lokal
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Inisialisasi SQLite untuk offline
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
+  // ✅ Hanya inisialisasi SQLite FFI di desktop (Windows, Linux, macOS)
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
 
-  // ✅ Inisialisasi locale 'id_ID' untuk DateFormat
+  // ✅ Inisialisasi lokal tanggal
   await initializeDateFormatting('id_ID', null);
 
-  // ✅ Load .env file
+  // ✅ Load file .env
   try {
     await dotenv.load();
     print("✅ .env berhasil dimuat: ${dotenv.env}");
@@ -34,10 +37,9 @@ void main() async {
 
   print("📌 BASE_URL yang dimuat: ${dotenv.env['BASE_URL']}");
 
-  // ✅ Atur GoogleFonts caching
+  // ✅ Cek apakah font Google sudah dicache
   final prefs = await SharedPreferences.getInstance();
   bool? isFontDownloaded = prefs.getBool('isFontDownloaded');
-
   GoogleFonts.config.allowRuntimeFetching =
       isFontDownloaded == true ? false : true;
 
@@ -76,8 +78,6 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
-
-    // ✅ Log saat MainNavigation berhasil dibuka
     print("📲 MainNavigation dibuka dengan tipePatroli: ${widget.tipePatroli}");
 
     _pages = [

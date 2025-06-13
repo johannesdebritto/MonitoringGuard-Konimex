@@ -69,7 +69,7 @@ class LoginLogic {
     } catch (e) {
       print("🔴 [LOGIN ERROR] Exception: $e");
       return _showWarningDialog(
-          context, "Terjadi kesalahan, periksa koneksi internet");
+          context, "Terjadi kesalahan  wkwkkw, periksa koneksi internet");
     }
   }
 

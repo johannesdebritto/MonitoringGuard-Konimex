@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:monitoring_guard_frontend/NFC/scanner_modal.dart';
 
 class BottomNavbarWidgets extends StatelessWidget {
   final int selectedIndex;
@@ -98,12 +99,25 @@ class BottomNavbarWidgets extends StatelessWidget {
         border: Border.all(color: Colors.black, width: 3),
       ),
       padding: const EdgeInsets.all(8),
-      child: IconButton(
-        onPressed: () => onItemTapped(1),
-        icon: Icon(
-          Iconsax.scan_barcode_outline,
-          size: 30,
-          color: Colors.black,
+      child: Builder(
+        builder: (context) => IconButton(
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              isScrollControlled: true,
+              builder: (context) => ScannerNFCModal(
+                onItemTapped: onItemTapped, // dari parent
+              ),
+            );
+          },
+          icon: const Icon(
+            Iconsax.scan_barcode_outline,
+            size: 30,
+            color: Colors.black,
+          ),
         ),
       ),
     );

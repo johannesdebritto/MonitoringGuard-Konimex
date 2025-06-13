@@ -144,7 +144,7 @@ class _TugasScreenState extends State<TugasScreen> {
                         Row(
                           children: [
                             Text(
-                              "Status Tugas: ",
+                              "Status: ",
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,

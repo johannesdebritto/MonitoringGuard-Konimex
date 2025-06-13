@@ -24,7 +24,8 @@ class PatroliDalamLogic {
 
     // Ambil id_riwayat terbaru dari tabel riwayat_dalam
     int? idRiwayat = await RiwayatDalamHelper.getLastIdRiwayatDalam();
-
+// Simpan ke shared preferences
+    prefs.setString('id_riwayat', idRiwayat.toString());
     // Validasi data penting
     if (idAnggota == null || idRiwayat == null) {
       ScaffoldMessenger.of(context).showSnackBar(
